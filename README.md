@@ -41,16 +41,8 @@ Multiple provider entries enable fallback and routing:
 {
 	"strategy": "priority",
 	"fallback": true,
+	"auto": true,
 	"providers": [
-		{
-			"id": "openai-search",
-			"provider": "openai",
-			"baseUrl": "https://api.openai.com/v1/responses",
-			"apiKey": "<local-only-key>",
-			"model": "gpt-5.5",
-			"priority": 0,
-			"maxResults": 8
-		},
 		{
 			"id": "brave-search",
 			"provider": "brave",
@@ -68,6 +60,21 @@ Multiple provider entries enable fallback and routing:
 	]
 }
 ```
+
+### Native auto-route
+
+When `auto` is `true` (the default) and the active pi model exposes a server-hosted search tool, the extension prepends an implicit `{ id: "native", ... }` entry that reuses the model's resolved API key via `ExtensionContext.modelRegistry.getApiKeyAndHeaders`. The native entry tries first; on failure or when the model does not match, the configured providers handle the search. Disable with `"auto": false` if you want only the explicit `providers` list.
+
+Models that activate native routing (Q1 2026):
+
+- `openai`: `gpt-5.5`, `gpt-5.5-fast`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4o`, `gpt-4o-mini` (excludes `gpt-4.1-nano`, `gpt-5-codex`, `gpt-5.1-codex`).
+- `anthropic` or `anthropic`: `claude-opus-4-*`, `claude-sonnet-4-*`.
+- `xai`: any `grok-*`.
+- `perplexity`: any `sonar*` (search is intrinsic to Sonar models).
+- `z-ai` or `zai`: any `glm-*`.
+- `openrouter`: any `<provider>/<model>` whose `<provider>` and `<model>` match one of the rows above (for example `openai/gpt-5.5` or `anthropic/claude-opus-4-7`).
+
+The native entry inherits `model.baseUrl` from `ExtensionContext.model`, so any local gateway override (such as a `anthropic` or `anthropic` baseUrl registered in `~/.senpi/agent/models.json`) is honored. The endpoint path is appended automatically: if `baseUrl` already ends with `/v1`, only the resource segment is added; otherwise `/v1/<resource>` is appended.
 
 Routing strategies:
 
