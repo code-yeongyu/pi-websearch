@@ -1,0 +1,5 @@
+pi-websearch
+
+This project provides a pi extension that normalizes web search provider APIs behind a single `web_search` tool interface.
+
+Provider names, API shapes, and documentation references belong to their respective owners.
