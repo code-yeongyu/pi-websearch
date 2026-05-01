@@ -49,9 +49,9 @@ describe("buildNativeEntry", () => {
 				baseUrl: "https://api.anthropic.com/v1/messages",
 			},
 			{
-				model: model("anthropic", "claude-opus-4-7", "https://anthropic.gateway.example.com/anthropic"),
+				model: model("anthropic", "claude-opus-4-7", "https://anthropic.gateway.example.com/proxy"),
 				provider: "anthropic",
-				baseUrl: "https://anthropic.gateway.example.com/anthropic/v1/messages",
+				baseUrl: "https://anthropic.gateway.example.com/proxy/v1/messages",
 			},
 			{
 				model: model("xai", "grok-4.3"),

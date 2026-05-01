@@ -275,7 +275,7 @@ describe("buildSearchRequest", () => {
 		const config: SearchProviderConfig = {
 			provider: "anthropic",
 			apiKey: "anthropic-test",
-			baseUrl: "https://anthropic.gateway.example.com/anthropic/v1/messages",
+			baseUrl: "https://anthropic.gateway.example.com/v1/messages",
 			model: "claude-sonnet-4-5-20250929",
 			allowedDomains: ["docs.example.com"],
 		};
@@ -284,7 +284,7 @@ describe("buildSearchRequest", () => {
 		const request = buildSearchRequest(config, { query: "current anthropic search docs", maxResults: 5 });
 
 		// then
-		expect(request.url).toBe("https://anthropic.gateway.example.com/anthropic/v1/messages");
+		expect(request.url).toBe("https://anthropic.gateway.example.com/v1/messages");
 		expect(request.init.method).toBe("POST");
 		expect(request.init.headers).toHaveProperty("x-api-key", "anthropic-test");
 		expect(request.init.headers).toHaveProperty("anthropic-version", "2023-06-01");

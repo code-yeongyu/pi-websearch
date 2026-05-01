@@ -79,10 +79,10 @@ describe("loadWebsearchConfig", () => {
 				fallback: true,
 				providers: [
 					{
-						id: "anthropic",
+						id: "anthropic-gateway",
 						provider: "anthropic",
 						apiKey: "anthropic-test",
-						baseUrl: "https://anthropic.gateway.example.com/anthropic/v1/messages",
+						baseUrl: "https://anthropic.gateway.example.com/v1/messages",
 						weight: 2,
 					},
 					{ id: "exa-search", provider: "exa", apiKey: "exa-test", priority: 10 },
@@ -100,7 +100,11 @@ describe("loadWebsearchConfig", () => {
 			if (result.ok) {
 				expect(result.config.strategy).toBe("round-robin");
 				expect(result.config.providers).toHaveLength(2);
-				expect(result.config.providers[0]).toMatchObject({ id: "anthropic", provider: "anthropic", weight: 2 });
+				expect(result.config.providers[0]).toMatchObject({
+					id: "anthropic-gateway",
+					provider: "anthropic",
+					weight: 2,
+				});
 			}
 		} finally {
 			await rm(root, { recursive: true, force: true });

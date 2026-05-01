@@ -68,13 +68,13 @@ When `auto` is `true` (the default) and the active pi model exposes a server-hos
 Models that activate native routing (Q1 2026):
 
 - `openai`: `gpt-5.5`, `gpt-5.5-fast`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4o`, `gpt-4o-mini` (excludes `gpt-4.1-nano`, `gpt-5-codex`, `gpt-5.1-codex`).
-- `anthropic` or `anthropic`: `claude-opus-4-*`, `claude-sonnet-4-*`.
+- `anthropic`: `claude-opus-4-*`, `claude-sonnet-4-*`.
 - `xai`: any `grok-*`.
 - `perplexity`: any `sonar*` (search is intrinsic to Sonar models).
 - `z-ai` or `zai`: any `glm-*`.
 - `openrouter`: any `<provider>/<model>` whose `<provider>` and `<model>` match one of the rows above (for example `openai/gpt-5.5` or `anthropic/claude-opus-4-7`).
 
-The native entry inherits `model.baseUrl` from `ExtensionContext.model`, so any local gateway override (such as a `anthropic` or `anthropic` baseUrl registered in `~/.senpi/agent/models.json`) is honored. The endpoint path is appended automatically: if `baseUrl` already ends with `/v1`, only the resource segment is added; otherwise `/v1/<resource>` is appended.
+The native entry inherits `model.baseUrl` from `ExtensionContext.model`, so any local gateway override registered in the pi model registry is honored. The endpoint path is appended automatically: if `baseUrl` already ends with `/v1`, only the resource segment is added; otherwise `/v1/<resource>` is appended.
 
 Routing strategies:
 

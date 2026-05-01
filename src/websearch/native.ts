@@ -29,7 +29,7 @@ function nativeMapping(model: NativeModelInfo): NativeProviderMapping | null {
 	}
 
 	if (
-		(model.provider === "anthropic" || model.provider === "anthropic") &&
+		model.provider === "anthropic" &&
 		(/^claude-(opus|sonnet)-4(-\d+)?$/.test(model.id) || /^claude-(opus|sonnet)-4-\d+-\d{8}$/.test(model.id))
 	) {
 		return { provider: "anthropic", resource: "messages" };
