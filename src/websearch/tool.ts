@@ -1,9 +1,10 @@
 import { defineTool } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 
+import { buildNativeEntry, type NativeModelInfo, type NativeModelRegistry } from "./native.js";
 import { renderSearchCall, renderSearchResult } from "./renderers.js";
 import { createSearchRoutingState, formatSearchText, performSearch, type SearchRoutingState } from "./search.js";
-import type { ConfigLoadResult, SearchDetails } from "./types.js";
+import type { ConfigLoadResult, SearchDetails, WebsearchConfig } from "./types.js";
 
 const Params = Type.Object(
 	{
@@ -20,6 +21,17 @@ const Params = Type.Object(
 
 export type ConfigProvider = () => ConfigLoadResult;
 
+interface WebSearchToolContext {
+	model?: NativeModelInfo;
+	modelRegistry?: NativeModelRegistry;
+}
+
+async function configWithNativeRoute(config: WebsearchConfig, ctx?: WebSearchToolContext): Promise<WebsearchConfig> {
+	if (!config.auto) return config;
+	const nativeEntry = await buildNativeEntry(ctx?.model, ctx?.modelRegistry);
+	return nativeEntry ? { ...config, providers: [nativeEntry, ...config.providers] } : config;
+}
+
 export function createWebSearchTool(getConfig: ConfigProvider) {
 	let routingState: SearchRoutingState | undefined;
 	let routingKey = "";
@@ -31,7 +43,7 @@ export function createWebSearchTool(getConfig: ConfigProvider) {
 		promptSnippet: "Search the web for current information, documentation, news, or external facts.",
 		promptGuidelines: ["After using web_search, cite relevant returned URLs in the final answer."],
 		parameters: Params,
-		async execute(_toolCallId, params, signal) {
+		async execute(_toolCallId, params, signal, _onUpdate, ctx?: WebSearchToolContext) {
 			if (params.allowed_domains?.length && params.blocked_domains?.length) {
 				const message = "Error: Cannot specify both allowed_domains and blocked_domains in the same request";
 				const details: SearchDetails = {
@@ -58,8 +70,8 @@ export function createWebSearchTool(getConfig: ConfigProvider) {
 				return { content: [{ type: "text", text: loaded.message }], details };
 			}
 
-			const config = loaded.config;
-			const maxResults = config.providers[0]?.maxResults ?? 10;
+			const maxResults = loaded.config.providers[0]?.maxResults ?? 10;
+			const config = await configWithNativeRoute(loaded.config, ctx);
 			const nextRoutingKey = `${config.strategy}:${config.providers.map((provider) => provider.id ?? provider.provider).join("|")}`;
 			if (
 				!routingState ||

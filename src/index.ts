@@ -51,7 +51,7 @@ export default function (pi: ExtensionAPI): void {
 			}
 			if (state.ok) {
 				ctx.ui.notify(
-					`Web search active: strategy=${state.config.strategy}, providers=${providerList(state.config)}`,
+					`Web search active: strategy=${state.config.strategy}, auto=${state.config.auto ? "enabled" : "disabled"}, providers=${providerList(state.config)}`,
 					"info",
 				);
 				return;
