@@ -38,7 +38,11 @@ describe("loadWebsearchConfig", () => {
 		const globalPi = join(root, ".pi-home");
 		await mkdir(projectPi, { recursive: true });
 		await mkdir(globalPi, { recursive: true });
-		await writeFile(join(projectPi, "websearch.json"), JSON.stringify({ provider: "exa", maxResults: 3 }), "utf8");
+		await writeFile(
+			join(projectPi, "websearch.json"),
+			JSON.stringify({ provider: "exa", apiKey: "exa-project", maxResults: 3 }),
+			"utf8",
+		);
 		await writeFile(
 			join(globalPi, "websearch.json"),
 			JSON.stringify({ provider: "tavily", apiKey: "global" }),
@@ -54,7 +58,7 @@ describe("loadWebsearchConfig", () => {
 			if (result.ok) {
 				expect(result.config.strategy).toBe("priority");
 				expect(result.config.fallback).toBe(true);
-				expect(result.config.providers).toEqual([{ provider: "exa", maxResults: 3 }]);
+				expect(result.config.providers).toEqual([{ provider: "exa", apiKey: "exa-project", maxResults: 3 }]);
 				expect(result.source).toBe(join(projectPi, "websearch.json"));
 			}
 		} finally {
@@ -80,7 +84,7 @@ describe("loadWebsearchConfig", () => {
 						baseUrl: "https://anthropic.gateway.example.com/anthropic/v1/messages",
 						weight: 2,
 					},
-					{ id: "free-exa", provider: "exa", priority: 10 },
+					{ id: "exa-search", provider: "exa", apiKey: "exa-test", priority: 10 },
 				],
 			}),
 			"utf8",
@@ -123,9 +127,20 @@ describe("loadWebsearchConfig", () => {
 });
 
 describe("validateProviderConfig", () => {
-	it("#given exa without api key #when validating #then provider is valid", () => {
+	it("#given exa without api key #when validating #then provider is invalid", () => {
 		// given / when
 		const result = validateProviderConfig({ provider: "exa" });
+
+		// then
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.reason).toBe("missing_api_key");
+		}
+	});
+
+	it("#given exa with api key #when validating #then provider is valid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "exa", apiKey: "exa-test" });
 
 		// then
 		expect(result.ok).toBe(true);

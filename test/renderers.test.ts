@@ -24,13 +24,13 @@ describe("renderSearchResult", () => {
 		// given
 		const details: SearchDetails = {
 			provider: "exa",
-			entryId: "free-exa",
+			entryId: "exa-search",
 			query: "pi extensions",
 			results: [{ title: "Pi", url: "https://example.com/pi", snippet: "Pi docs" }],
 			durationMs: 42,
 			truncated: false,
 			strategy: "priority",
-			attempts: [{ provider: "exa", entryId: "free-exa", durationMs: 42, resultsCount: 1 }],
+			attempts: [{ provider: "exa", entryId: "exa-search", durationMs: 42, resultsCount: 1 }],
 		};
 
 		// when
@@ -43,8 +43,8 @@ describe("renderSearchResult", () => {
 		// then
 		const rendered = component.render(120).join("\n");
 		expect(rendered).toContain("1 result");
-		expect(rendered).toContain("exa/free-exa");
-		expect(rendered).toContain("route exa/free-exa:1");
+		expect(rendered).toContain("exa/exa-search");
+		expect(rendered).toContain("route exa/exa-search:1");
 		expect(rendered).toContain("https://example.com/pi");
 	});
 });

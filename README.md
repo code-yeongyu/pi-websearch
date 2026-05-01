@@ -52,8 +52,16 @@ Multiple provider entries enable fallback and routing:
 			"maxResults": 8
 		},
 		{
-			"id": "free-exa",
+			"id": "brave-search",
+			"provider": "brave",
+			"apiKey": "<local-only-key>",
+			"priority": 10,
+			"maxResults": 8
+		},
+		{
+			"id": "exa-search",
 			"provider": "exa",
+			"apiKey": "<local-only-key>",
 			"priority": 10,
 			"maxResults": 8
 		}
@@ -69,7 +77,7 @@ Routing strategies:
 
 Supported providers:
 
-- `exa`: direct Exa search. API key is optional.
+- `exa`: direct Exa search. Requires `apiKey`.
 - `tavily`: direct Tavily search. Requires `apiKey`.
 - `brave`: Brave Search API. Requires `apiKey`.
 - `serper`: Serper Google search API. Requires `apiKey`.

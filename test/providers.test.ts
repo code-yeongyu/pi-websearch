@@ -40,9 +40,9 @@ describe("buildSearchRequest", () => {
 		}
 	});
 
-	it("#given exa config without api key #when building request #then uses anonymous exa endpoint", () => {
+	it("#given exa config with api key #when building request #then sends exa key", () => {
 		// given
-		const config: SearchProviderConfig = { provider: "exa" };
+		const config: SearchProviderConfig = { provider: "exa", apiKey: "exa-test" };
 
 		// when
 		const request = buildSearchRequest(config, { query: "pi extension", maxResults: 4 });
@@ -50,7 +50,7 @@ describe("buildSearchRequest", () => {
 		// then
 		expect(request.url).toBe("https://api.exa.ai/search");
 		expect(request.init.method).toBe("POST");
-		expect(request.init.headers).not.toHaveProperty("x-api-key");
+		expect(request.init.headers).toHaveProperty("x-api-key", "exa-test");
 		expect(request.body).toEqual({ query: "pi extension", numResults: 4 });
 	});
 

@@ -124,7 +124,7 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 	const { allowedDomains, blockedDomains } = resolveDomainFilters(config, request);
 
 	if (config.provider === "exa") {
-		const headers = contentHeaders(config.apiKey ? { "x-api-key": config.apiKey } : undefined);
+		const headers = contentHeaders({ "x-api-key": config.apiKey ?? "" });
 		const body: JsonObject = { query: request.query, numResults: clamp(maxResults, 1, 20) };
 		if (allowedDomains) body.includeDomains = allowedDomains;
 		if (blockedDomains) body.excludeDomains = blockedDomains;

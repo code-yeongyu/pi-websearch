@@ -190,8 +190,6 @@ export function validateProviderConfig(config: SearchProviderEntry): ProviderVal
 		};
 	}
 
-	if (config.provider === "exa") return { ok: true, config };
-
 	if (config.provider === "google-cse" && !config.searchEngineId) {
 		return { ok: false, reason: "missing_api_key", message: "Provider google-cse requires searchEngineId." };
 	}
