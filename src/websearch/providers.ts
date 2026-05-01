@@ -174,6 +174,26 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 	}
 
 	if (config.provider === "z-ai") {
+		if (config.model) {
+			const webSearch: JsonObject = {
+				enable: true,
+				search_engine: "search-prime",
+				search_result: true,
+				count: clamp(maxResults, 1, 50),
+			};
+			if (allowedDomains?.[0]) webSearch.search_domain_filter = allowedDomains[0];
+			if (config.searchContextSize) webSearch.content_size = config.searchContextSize;
+			return {
+				url: providerUrl(config),
+				init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
+				body: {
+					model: config.model,
+					messages: [{ role: "user", content: request.query }],
+					tools: [{ type: "web_search", web_search: webSearch }],
+				},
+			};
+		}
+
 		const body: JsonObject = {
 			search_engine: "search-prime",
 			search_query: appendDomainFilters(request.query, undefined, blockedDomains),
@@ -188,6 +208,22 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 	}
 
 	if (config.provider === "perplexity") {
+		if (config.model) {
+			const body: JsonObject = {
+				model: config.model,
+				messages: [{ role: "user", content: request.query }],
+			};
+			if (allowedDomains) body.search_domain_filter = allowedDomains;
+			if (!allowedDomains && blockedDomains)
+				body.search_domain_filter = blockedDomains.map((domain) => `-${domain}`);
+			if (config.searchContextSize) body.web_search_options = { search_context_size: config.searchContextSize };
+			return {
+				url: providerUrl(config),
+				init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
+				body,
+			};
+		}
+
 		const body: JsonObject = { query: request.query, max_results: clamp(maxResults, 1, 20) };
 		if (allowedDomains) body.search_domain_filter = allowedDomains;
 		if (!allowedDomains && blockedDomains) body.search_domain_filter = blockedDomains.map((domain) => `-${domain}`);
@@ -322,6 +358,19 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 	}
 
 	if (provider === "z-ai") {
+		const chatResults = collect(
+			getArray(data.web_search).map((raw) => {
+				const item = getObject(raw);
+				return result(
+					getString(item?.title),
+					getString(item?.link),
+					getString(item?.content),
+					getString(item?.media),
+				);
+			}),
+		);
+		if (chatResults.length > 0) return chatResults;
+
 		return collect(
 			getArray(data.search_result).map((raw) => {
 				const item = getObject(raw);
@@ -336,6 +385,19 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 	}
 
 	if (provider === "perplexity") {
+		const chatResults = collect(
+			getArray(data.search_results).map((raw) => {
+				const item = getObject(raw);
+				const searchResult = result(getString(item?.title), getString(item?.url), getString(item?.snippet));
+				if (searchResult) {
+					const publishedAt = getString(item?.date) ?? getString(item?.last_updated);
+					if (publishedAt) searchResult.publishedAt = publishedAt;
+				}
+				return searchResult;
+			}),
+		);
+		if (chatResults.length > 0) return chatResults;
+
 		return collect(
 			getArray(data.results).map((raw) => {
 				const item = getObject(raw);

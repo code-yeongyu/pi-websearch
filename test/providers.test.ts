@@ -222,6 +222,30 @@ describe("buildSearchRequest", () => {
 		});
 	});
 
+	it("#given native perplexity config #when building request #then uses chat completion payload", () => {
+		// given
+		const config: SearchProviderConfig = {
+			provider: "perplexity",
+			apiKey: "pplx-test",
+			baseUrl: "https://api.perplexity.ai/chat/completions",
+			model: "sonar-pro",
+			allowedDomains: ["docs.example.com"],
+		};
+
+		// when
+		const request = buildSearchRequest(config, { query: "search api docs", maxResults: 25 });
+
+		// then
+		expect(request.url).toBe("https://api.perplexity.ai/chat/completions");
+		expect(request.init.method).toBe("POST");
+		expect(request.init.headers).toHaveProperty("Authorization", "Bearer pplx-test");
+		expect(request.body).toEqual({
+			model: "sonar-pro",
+			messages: [{ role: "user", content: "search api docs" }],
+			search_domain_filter: ["docs.example.com"],
+		});
+	});
+
 	it("#given xai config #when building request #then uses responses web_search tool shape", () => {
 		// given
 		const config: SearchProviderConfig = {
@@ -270,6 +294,41 @@ describe("buildSearchRequest", () => {
 			messages: [{ role: "user", content: "current anthropic search docs" }],
 			tools: [
 				{ type: "web_search_20250305", name: "web_search", max_uses: 8, allowed_domains: ["docs.example.com"] },
+			],
+		});
+	});
+
+	it("#given native z-ai config #when building request #then uses chat completion web search payload", () => {
+		// given
+		const config: SearchProviderConfig = {
+			provider: "z-ai",
+			apiKey: "zai-test",
+			baseUrl: "https://api.z.ai/chat/completions",
+			model: "glm-4.6",
+			allowedDomains: ["docs.example.com"],
+		};
+
+		// when
+		const request = buildSearchRequest(config, { query: "financial news", maxResults: 15 });
+
+		// then
+		expect(request.url).toBe("https://api.z.ai/chat/completions");
+		expect(request.init.method).toBe("POST");
+		expect(request.init.headers).toHaveProperty("Authorization", "Bearer zai-test");
+		expect(request.body).toEqual({
+			model: "glm-4.6",
+			messages: [{ role: "user", content: "financial news" }],
+			tools: [
+				{
+					type: "web_search",
+					web_search: {
+						enable: true,
+						search_engine: "search-prime",
+						search_result: true,
+						count: 15,
+						search_domain_filter: "docs.example.com",
+					},
+				},
 			],
 		});
 	});
@@ -390,6 +449,24 @@ describe("normalizeSearchResponse", () => {
 		]);
 	});
 
+	it("#given perplexity chat completion response #when normalizing #then uses search result snippets", () => {
+		// given
+		const payload = {
+			choices: [{ message: { content: "Answer with sources" } }],
+			search_results: [
+				{ title: "Perplexity", url: "https://docs.perplexity.ai", snippet: "Search docs", date: "2026-01-01" },
+			],
+		};
+
+		// when
+		const results = normalizeSearchResponse("perplexity", payload);
+
+		// then
+		expect(results).toEqual([
+			{ title: "Perplexity", url: "https://docs.perplexity.ai", snippet: "Search docs", publishedAt: "2026-01-01" },
+		]);
+	});
+
 	it("#given xai response without annotations #when normalizing #then falls back to citations", () => {
 		// given
 		const payload = {
@@ -428,5 +505,28 @@ describe("normalizeSearchResponse", () => {
 
 		// then
 		expect(results).toEqual([{ title: "Anthropic", url: "https://docs.anthropic.com", snippet: "2026-01-01" }]);
+	});
+
+	it("#given z-ai chat completion response #when normalizing #then uses web search citations", () => {
+		// given
+		const payload = {
+			choices: [{ message: { content: "Answer with Z.ai source" } }],
+			web_search: [
+				{
+					title: "Z Result",
+					link: "https://z.example.com",
+					content: "Z snippet",
+					media: "Example",
+				},
+			],
+		};
+
+		// when
+		const results = normalizeSearchResponse("z-ai", payload);
+
+		// then
+		expect(results).toEqual([
+			{ title: "Z Result", url: "https://z.example.com", snippet: "Z snippet", source: "Example" },
+		]);
 	});
 });
