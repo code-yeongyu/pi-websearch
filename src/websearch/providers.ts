@@ -107,7 +107,7 @@ function resultsFromTextUrls(text: string | undefined): SearchResultItem[] {
 }
 
 function searchOnlyPrompt(query: string): string {
-	return `Use web search to find pages matching this query. Return only source URLs, one per line. Query: ${query}`;
+	return `Find web pages matching any of these search terms or quoted phrases. If the query contains OR, search each alternative independently. Return only relevant source URLs, one per line. Query: ${query}`;
 }
 
 function collect(items: Array<SearchResultItem | null>, max = 50): SearchResultItem[] {

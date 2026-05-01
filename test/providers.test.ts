@@ -172,7 +172,7 @@ describe("buildSearchRequest", () => {
 		expect(request.init.headers).toHaveProperty("Authorization", "Bearer openai-test");
 		expect(request.body).toEqual({
 			model: "gpt-5.5",
-			input: "Use web search to find pages matching this query. Return only source URLs, one per line. Query: latest OpenAI web search docs",
+			input: "Find web pages matching any of these search terms or quoted phrases. If the query contains OR, search each alternative independently. Return only relevant source URLs, one per line. Query: latest OpenAI web search docs",
 			tools: [{ type: "web_search", external_web_access: false, search_context_size: "high" }],
 			include: ["web_search_call.action.sources"],
 			tool_choice: "required",
@@ -193,7 +193,7 @@ describe("buildSearchRequest", () => {
 		// then
 		expect(request.body).toEqual({
 			model: "gpt-5.5",
-			input: "Use web search to find pages matching this query. Return only source URLs, one per line. Query: latest docs -site:spam.example.com",
+			input: "Find web pages matching any of these search terms or quoted phrases. If the query contains OR, search each alternative independently. Return only relevant source URLs, one per line. Query: latest docs -site:spam.example.com",
 			tools: [{ type: "web_search", external_web_access: true }],
 			include: ["web_search_call.action.sources"],
 			tool_choice: "required",
