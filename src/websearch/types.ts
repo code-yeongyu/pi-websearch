@@ -38,6 +38,7 @@ export interface SearchProviderEntry extends SearchProviderConfig {
 export interface WebsearchConfig {
 	strategy: RoutingStrategy;
 	fallback: boolean;
+	auto: boolean;
 	providers: SearchProviderEntry[];
 }
 

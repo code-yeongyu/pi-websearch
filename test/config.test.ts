@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { loadWebsearchConfig, validateProviderConfig } from "../src/websearch/config.js";
+import { loadWebsearchConfig, validateProviderConfig, validateWebsearchConfig } from "../src/websearch/config.js";
 
 async function makeTempHome(): Promise<string> {
 	const root = join(tmpdir(), `pi-websearch-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -58,6 +58,7 @@ describe("loadWebsearchConfig", () => {
 			if (result.ok) {
 				expect(result.config.strategy).toBe("priority");
 				expect(result.config.fallback).toBe(true);
+				expect(result.config.auto).toBe(true);
 				expect(result.config.providers).toEqual([{ provider: "exa", apiKey: "exa-project", maxResults: 3 }]);
 				expect(result.source).toBe(join(projectPi, "websearch.json"));
 			}
@@ -106,6 +107,55 @@ describe("loadWebsearchConfig", () => {
 		}
 	});
 
+	it("#given legacy config with auto false #when loading config #then disables native auto route", async () => {
+		// given
+		const root = await makeTempHome();
+		const projectPi = join(root, ".pi");
+		await mkdir(projectPi, { recursive: true });
+		await writeFile(
+			join(projectPi, "websearch.json"),
+			JSON.stringify({ provider: "exa", apiKey: "exa-test", auto: false }),
+			"utf8",
+		);
+
+		try {
+			// when
+			const result = await loadWebsearchConfig({ cwd: root, homeDir: root });
+
+			// then
+			expect(result.ok).toBe(true);
+			if (result.ok) expect(result.config.auto).toBe(false);
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
+	it("#given multi-provider config with auto false #when loading config #then disables native auto route", async () => {
+		// given
+		const root = await makeTempHome();
+		const projectPi = join(root, ".pi");
+		await mkdir(projectPi, { recursive: true });
+		await writeFile(
+			join(projectPi, "websearch.json"),
+			JSON.stringify({
+				auto: false,
+				providers: [{ provider: "exa", apiKey: "exa-test" }],
+			}),
+			"utf8",
+		);
+
+		try {
+			// when
+			const result = await loadWebsearchConfig({ cwd: root, homeDir: root });
+
+			// then
+			expect(result.ok).toBe(true);
+			if (result.ok) expect(result.config.auto).toBe(false);
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
 	it("#given empty provider list #when loading config #then config is invalid", async () => {
 		// given
 		const root = await makeTempHome();
@@ -123,6 +173,27 @@ describe("loadWebsearchConfig", () => {
 		} finally {
 			await rm(root, { recursive: true, force: true });
 		}
+	});
+});
+
+describe("validateWebsearchConfig", () => {
+	it("#given config with non-boolean auto #when validating #then config is invalid", () => {
+		// given
+		const invalidConfig = JSON.parse(
+			JSON.stringify({
+				strategy: "priority",
+				fallback: true,
+				auto: "yes",
+				providers: [{ provider: "exa", apiKey: "exa-test" }],
+			}),
+		);
+
+		// when
+		const result = validateWebsearchConfig(invalidConfig);
+
+		// then
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.message).toContain("auto");
 	});
 });
 

@@ -26,6 +26,7 @@ describe("performSearch", () => {
 		const config: WebsearchConfig = {
 			strategy: "priority",
 			fallback: true,
+			auto: true,
 			providers: [
 				{
 					id: "primary",
@@ -70,6 +71,7 @@ describe("performSearch", () => {
 		const config: WebsearchConfig = {
 			strategy: "round-robin",
 			fallback: false,
+			auto: true,
 			providers: [
 				{ id: "one", provider: "exa", baseUrl: "https://gateway.example.com/one" },
 				{ id: "two", provider: "exa", baseUrl: "https://gateway.example.com/two" },
@@ -104,6 +106,7 @@ describe("performSearch", () => {
 		const config: WebsearchConfig = {
 			strategy: "fill-first",
 			fallback: true,
+			auto: true,
 			providers: [
 				{ id: "one", provider: "exa", baseUrl: "https://gateway.example.com/one" },
 				{ id: "two", provider: "exa", baseUrl: "https://gateway.example.com/two" },

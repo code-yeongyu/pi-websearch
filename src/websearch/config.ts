@@ -146,6 +146,7 @@ function providerEntryFromObject(raw: JsonObject): SearchProviderEntry | null {
 }
 
 function configFromObject(raw: JsonObject): WebsearchConfig | null {
+	const auto = optionalBoolean(raw.auto) ?? true;
 	const rawProviders = Array.isArray(raw.providers) ? raw.providers : undefined;
 	if (rawProviders) {
 		if (optionalProvider(raw.provider)) return null;
@@ -154,11 +155,11 @@ function configFromObject(raw: JsonObject): WebsearchConfig | null {
 			.filter((entry): entry is SearchProviderEntry => entry !== null);
 		const strategy = optionalStrategy(raw.strategy) ?? "priority";
 		const fallback = optionalBoolean(raw.fallback) ?? true;
-		return { strategy, fallback, providers };
+		return { strategy, fallback, auto, providers };
 	}
 
 	const provider = providerEntryFromObject(raw);
-	return provider ? { strategy: "priority", fallback: true, providers: [provider] } : null;
+	return provider ? { strategy: "priority", fallback: true, auto, providers: [provider] } : null;
 }
 
 function hasApiKey(config: SearchProviderConfig): boolean {
@@ -214,6 +215,9 @@ export function validateWebsearchConfig(
 ): ProviderValidationResult | { ok: true; config: WebsearchConfig } {
 	if (!STRATEGIES.includes(config.strategy)) {
 		return { ok: false, reason: "invalid_config", message: `Unsupported routing strategy: ${config.strategy}` };
+	}
+	if (typeof config.auto !== "boolean") {
+		return { ok: false, reason: "invalid_config", message: "Websearch config auto must be a boolean." };
 	}
 	if (config.providers.length === 0) {
 		return { ok: false, reason: "invalid_config", message: "Websearch config requires at least one provider." };
