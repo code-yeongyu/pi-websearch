@@ -1,5 +1,6 @@
 import { buildSearchRequest, normalizeSearchResponse } from "./providers.js";
 import type {
+	JsonObject,
 	RoutingStrategy,
 	SearchAttempt,
 	SearchDetails,
@@ -7,6 +8,34 @@ import type {
 	SearchRequest,
 	WebsearchConfig,
 } from "./types.js";
+
+const MAX_ERROR_DETAIL_LENGTH = 500;
+
+function truncate(value: string, max: number): string {
+	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+}
+
+function extractErrorDetail(payload: unknown, bodyText: string): string {
+	if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
+		const obj = payload as JsonObject;
+		const error = obj.error;
+		if (typeof error === "string" && error.length > 0) return truncate(error, MAX_ERROR_DETAIL_LENGTH);
+		if (typeof error === "object" && error !== null && !Array.isArray(error)) {
+			const message = (error as JsonObject).message;
+			if (typeof message === "string" && message.length > 0) return truncate(message, MAX_ERROR_DETAIL_LENGTH);
+		}
+		const message = obj.message;
+		if (typeof message === "string" && message.length > 0) return truncate(message, MAX_ERROR_DETAIL_LENGTH);
+	}
+	const trimmed = bodyText.trim();
+	if (!trimmed) return "";
+	return truncate(trimmed, MAX_ERROR_DETAIL_LENGTH);
+}
+
+function httpErrorMessage(status: number, payload: unknown, bodyText: string): string {
+	const detail = extractErrorDetail(payload, bodyText);
+	return detail ? `Search failed with HTTP ${status}: ${detail}` : `Search failed with HTTP ${status}`;
+}
 
 export interface SearchRoutingState {
 	roundRobinCursor: number;
@@ -98,11 +127,19 @@ async function performProviderSearch(
 		};
 	}
 
-	let payload: unknown;
+	let bodyText = "";
 	try {
-		payload = await response.json();
+		bodyText = await response.text();
 	} catch {
-		payload = {};
+		bodyText = "";
+	}
+	let payload: unknown = {};
+	if (bodyText.length > 0) {
+		try {
+			payload = JSON.parse(bodyText);
+		} catch {
+			payload = {};
+		}
 	}
 	if (!response.ok) {
 		return {
@@ -112,7 +149,7 @@ async function performProviderSearch(
 			results: [],
 			durationMs: Date.now() - startedAt,
 			truncated: false,
-			error: `Search failed with HTTP ${response.status}`,
+			error: httpErrorMessage(response.status, payload, bodyText),
 		};
 	}
 

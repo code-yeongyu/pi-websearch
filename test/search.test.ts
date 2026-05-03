@@ -52,7 +52,7 @@ describe("performSearch", () => {
 				entryId: "primary",
 				durationMs: expect.any(Number),
 				resultsCount: 0,
-				error: "Search failed with HTTP 503",
+				error: "Search failed with HTTP 503: down",
 			},
 			{ provider: "exa", entryId: "fallback", durationMs: expect.any(Number), resultsCount: 1 },
 		]);
@@ -123,5 +123,162 @@ describe("performSearch", () => {
 			"https://second.example.com",
 		]);
 		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual(["one", "two"]);
+	});
+
+	it("#given http error with nested error message #when fetch fails #then surfaces the message", async () => {
+		// given
+		vi.stubGlobal("fetch", async (): Promise<Response> => {
+			return jsonResponse({ error: { message: "max_tokens must be at least 1024" } }, 400);
+		});
+		const config: WebsearchConfig = {
+			strategy: "priority",
+			fallback: false,
+			auto: true,
+			providers: [
+				{ id: "primary", provider: "exa", apiKey: "exa-test", baseUrl: "https://gateway.example.com/exa" },
+			],
+		};
+
+		// when
+		const details = await performSearch(config, { query: "test", maxResults: 1 });
+
+		// then
+		expect(details.error).toContain("HTTP 400");
+		expect(details.error).toContain("max_tokens must be at least 1024");
+	});
+
+	it("#given http error with top-level error string #when fetch fails #then surfaces the error string", async () => {
+		// given
+		vi.stubGlobal("fetch", async (): Promise<Response> => {
+			return jsonResponse({ error: "Bad Request" }, 400);
+		});
+		const config: WebsearchConfig = {
+			strategy: "priority",
+			fallback: false,
+			auto: true,
+			providers: [
+				{ id: "primary", provider: "exa", apiKey: "exa-test", baseUrl: "https://gateway.example.com/exa" },
+			],
+		};
+
+		// when
+		const details = await performSearch(config, { query: "test", maxResults: 1 });
+
+		// then
+		expect(details.error).toContain("HTTP 400");
+		expect(details.error).toContain("Bad Request");
+	});
+
+	it("#given http error with non-json body #when fetch fails #then surfaces the raw body", async () => {
+		// given
+		vi.stubGlobal("fetch", async (): Promise<Response> => {
+			return new Response("error code: 530", { status: 530, headers: { "Content-Type": "text/plain" } });
+		});
+		const config: WebsearchConfig = {
+			strategy: "priority",
+			fallback: false,
+			auto: true,
+			providers: [
+				{
+					id: "primary",
+					provider: "openai",
+					apiKey: "openai-test",
+					baseUrl: "https://gateway.example.com/v1/responses",
+					model: "gpt-5.5",
+				},
+			],
+		};
+
+		// when
+		const details = await performSearch(config, { query: "test", maxResults: 1 });
+
+		// then
+		expect(details.error).toContain("HTTP 530");
+		expect(details.error).toContain("error code: 530");
+	});
+
+	it("#given http error with empty body #when fetch fails #then keeps a minimal error", async () => {
+		// given
+		vi.stubGlobal("fetch", async (): Promise<Response> => new Response("", { status: 502 }));
+		const config: WebsearchConfig = {
+			strategy: "priority",
+			fallback: false,
+			auto: true,
+			providers: [
+				{ id: "primary", provider: "exa", apiKey: "exa-test", baseUrl: "https://gateway.example.com/exa" },
+			],
+		};
+
+		// when
+		const details = await performSearch(config, { query: "test", maxResults: 1 });
+
+		// then
+		expect(details.error).toBe("Search failed with HTTP 502");
+	});
+
+	it("#given http error with very long body #when fetch fails #then truncates body in error", async () => {
+		// given
+		const longMessage = "x".repeat(2000);
+		vi.stubGlobal("fetch", async (): Promise<Response> => {
+			return jsonResponse({ error: { message: longMessage } }, 400);
+		});
+		const config: WebsearchConfig = {
+			strategy: "priority",
+			fallback: false,
+			auto: true,
+			providers: [
+				{ id: "primary", provider: "exa", apiKey: "exa-test", baseUrl: "https://gateway.example.com/exa" },
+			],
+		};
+
+		// when
+		const details = await performSearch(config, { query: "test", maxResults: 1 });
+
+		// then
+		expect(details.error).toContain("HTTP 400");
+		expect((details.error ?? "").length).toBeLessThan(700);
+		expect(details.error).toContain("…");
+	});
+
+	it("#given fallback chain all fail with bodies #when aggregating #then per-attempt details surface", async () => {
+		// given
+		vi.stubGlobal("fetch", async (input: string | URL | Request): Promise<Response> => {
+			const url = String(input);
+			if (url.includes("messages")) {
+				return jsonResponse({ error: { message: "model not supported" } }, 400);
+			}
+			return new Response("origin unreachable", { status: 530, headers: { "Content-Type": "text/plain" } });
+		});
+		const config: WebsearchConfig = {
+			strategy: "priority",
+			fallback: true,
+			auto: true,
+			providers: [
+				{
+					id: "native",
+					provider: "anthropic",
+					apiKey: "anthropic-test",
+					baseUrl: "https://gateway.example.com/v1/messages",
+				},
+				{
+					id: "openai-search",
+					provider: "openai",
+					apiKey: "openai-test",
+					baseUrl: "https://gateway.example.com/v1/responses",
+					model: "gpt-5.5",
+				},
+			],
+		};
+
+		// when
+		const details = await performSearch(config, { query: "test", maxResults: 1 });
+
+		// then
+		expect(details.error).toContain("anthropic/native");
+		expect(details.error).toContain("HTTP 400");
+		expect(details.error).toContain("model not supported");
+		expect(details.error).toContain("openai/openai-search");
+		expect(details.error).toContain("HTTP 530");
+		expect(details.error).toContain("origin unreachable");
 	});
 });
