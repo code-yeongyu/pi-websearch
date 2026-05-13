@@ -12,7 +12,7 @@ async function makeTempHome(): Promise<string> {
 }
 
 describe("loadWebsearchConfig", () => {
-	it("#given no config files #when loading config #then reports missing config", async () => {
+	it("#given no config files #when loading config #then returns duckduckgo html default", async () => {
 		// given
 		const root = await makeTempHome();
 
@@ -21,10 +21,15 @@ describe("loadWebsearchConfig", () => {
 			const result = await loadWebsearchConfig({ cwd: root, homeDir: root });
 
 			// then
-			expect(result.ok).toBe(false);
-			if (!result.ok) {
-				expect(result.reason).toBe("missing_config");
-				expect(result.message).toContain(".pi/websearch.json");
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.source).toBe("default:duckduckgo-html");
+				expect(result.config).toEqual({
+					strategy: "priority",
+					fallback: true,
+					auto: true,
+					providers: [{ id: "default", provider: "duckduckgo-html", maxResults: 10 }],
+				});
 			}
 		} finally {
 			await rm(root, { recursive: true, force: true });

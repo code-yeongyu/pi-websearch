@@ -134,7 +134,9 @@ async function performProviderSearch(
 		bodyText = "";
 	}
 	let payload: unknown = {};
-	if (bodyText.length > 0) {
+	if (config.provider === "duckduckgo-html") {
+		payload = { html: bodyText };
+	} else if (bodyText.length > 0) {
 		try {
 			payload = JSON.parse(bodyText);
 		} catch {

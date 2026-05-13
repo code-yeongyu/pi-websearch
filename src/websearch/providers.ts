@@ -95,6 +95,51 @@ function result(
 	return item;
 }
 
+function htmlDecode(value: string): string {
+	return value
+		.replaceAll("&amp;", "&")
+		.replaceAll("&quot;", '"')
+		.replaceAll("&#39;", "'")
+		.replaceAll("&lt;", "<")
+		.replaceAll("&gt;", ">");
+}
+
+function stripHtml(value: string): string {
+	return htmlDecode(
+		value
+			.replace(/<[^>]*>/g, "")
+			.replace(/\s+/g, " ")
+			.trim(),
+	);
+}
+
+function duckDuckGoResultUrl(rawHref: string): string | undefined {
+	const decodedHref = htmlDecode(rawHref);
+	const absoluteHref = decodedHref.startsWith("//") ? `https:${decodedHref}` : decodedHref;
+	let url: URL;
+	try {
+		url = new URL(absoluteHref);
+	} catch {
+		return undefined;
+	}
+	const redirected = url.searchParams.get("uddg");
+	return redirected ?? absoluteHref;
+}
+
+function normalizeDuckDuckGoHtml(html: string): SearchResultItem[] {
+	const matches = [...html.matchAll(/<a\b[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
+	const snippets = [...html.matchAll(/<a\b[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/g)].map(
+		(match) => stripHtml(match[1] ?? ""),
+	);
+	return collect(
+		matches.map((match, index) => {
+			const title = stripHtml(match[2] ?? "");
+			const url = duckDuckGoResultUrl(match[1] ?? "");
+			return result(title, url, snippets[index]);
+		}),
+	);
+}
+
 function resultsFromTextUrls(text: string | undefined): SearchResultItem[] {
 	if (!text) return [];
 	const urls = text.match(/https?:\/\/[^\s)\]}>"]+/g) ?? [];
@@ -150,6 +195,12 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 			url: url.toString(),
 			init: { method: "GET", headers: { Accept: "application/json", "X-Subscription-Token": config.apiKey ?? "" } },
 		};
+	}
+
+	if (config.provider === "duckduckgo-html") {
+		const url = new URL(providerUrl(config));
+		url.searchParams.set("q", appendDomainFilters(request.query, allowedDomains, blockedDomains));
+		return { url: url.toString(), init: { method: "GET", headers: { Accept: "text/html" } } };
 	}
 
 	if (config.provider === "serper") {
@@ -337,6 +388,10 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 				return result(getString(item?.title), getString(item?.url), getString(item?.description));
 			}),
 		);
+	}
+
+	if (provider === "duckduckgo-html") {
+		return normalizeDuckDuckGoHtml(getString(data.html) ?? "");
 	}
 
 	if (provider === "serper") {

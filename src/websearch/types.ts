@@ -2,6 +2,7 @@ export type SearchProvider =
 	| "exa"
 	| "tavily"
 	| "brave"
+	| "duckduckgo-html"
 	| "serper"
 	| "google-cse"
 	| "z-ai"

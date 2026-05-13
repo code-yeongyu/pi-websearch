@@ -22,6 +22,7 @@ const PROVIDERS: readonly SearchProvider[] = [
 	"exa",
 	"tavily",
 	"brave",
+	"duckduckgo-html",
 	"serper",
 	"google-cse",
 	"z-ai",
@@ -34,6 +35,12 @@ const PROVIDERS: readonly SearchProvider[] = [
 const CONTEXT_SIZES: readonly SearchContextSize[] = ["low", "medium", "high"];
 const CODEX_MODES: readonly CodexSearchMode[] = ["cached", "live"];
 const STRATEGIES: readonly RoutingStrategy[] = ["priority", "round-robin", "fill-first"];
+const DEFAULT_FREE_CONFIG: WebsearchConfig = {
+	strategy: "priority",
+	fallback: true,
+	auto: true,
+	providers: [{ id: "default", provider: "duckduckgo-html", maxResults: 10 }],
+};
 
 export interface ConfigLoadOptions {
 	cwd: string;
@@ -203,7 +210,12 @@ export function validateProviderConfig(config: SearchProviderEntry): ProviderVal
 		};
 	}
 
-	if (config.provider !== "codex" && config.provider !== "openai" && !hasApiKey(config)) {
+	if (
+		config.provider !== "codex" &&
+		config.provider !== "openai" &&
+		config.provider !== "duckduckgo-html" &&
+		!hasApiKey(config)
+	) {
 		return { ok: false, reason: "missing_api_key", message: `Provider ${config.provider} requires apiKey.` };
 	}
 
@@ -263,9 +275,5 @@ export async function loadWebsearchConfig(options: ConfigLoadOptions): Promise<C
 		return { ok: true, config, source: path };
 	}
 
-	return {
-		ok: false,
-		reason: "missing_config",
-		message: "Missing websearch config. Create .pi/websearch.json or ~/.pi/websearch.json before starting pi.",
-	};
+	return { ok: true, config: DEFAULT_FREE_CONFIG, source: "default:duckduckgo-html" };
 }

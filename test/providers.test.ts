@@ -83,6 +83,25 @@ describe("buildSearchRequest", () => {
 		expect(request.init.headers).toHaveProperty("X-Subscription-Token", "brave-test");
 	});
 
+	it("#given duckduckgo html config #when building request #then uses html endpoint without api key", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "duckduckgo-html" };
+
+		// when
+		const request = buildSearchRequest(config, {
+			query: "zero config search",
+			maxResults: 4,
+			blockedDomains: ["spam.example.com"],
+		});
+
+		// then
+		expect(request.url).toContain("https://html.duckduckgo.com/html/");
+		expect(request.url).toContain("q=zero+config+search+-site%3Aspam.example.com");
+		expect(request.init.method).toBe("GET");
+		expect(request.init.headers).toHaveProperty("Accept", "text/html");
+		expect(request.body).toBeUndefined();
+	});
+
 	it("#given config allowlist and request allowlist #when building request #then request narrows config policy", () => {
 		// given
 		const config: SearchProviderConfig = {
@@ -335,6 +354,26 @@ describe("buildSearchRequest", () => {
 });
 
 describe("normalizeSearchResponse", () => {
+	it("#given duckduckgo html response #when normalizing #then extracts result links", () => {
+		// given
+		const payload = {
+			html: `
+				<html><body>
+					<a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fdocs.example.com%2Fpi&amp;rut=abc">Pi Docs</a>
+					<a class="result__snippet">Useful docs snippet</a>
+				</body></html>
+			`,
+		};
+
+		// when
+		const results = normalizeSearchResponse("duckduckgo-html", payload);
+
+		// then
+		expect(results).toEqual([
+			{ title: "Pi Docs", url: "https://docs.example.com/pi", snippet: "Useful docs snippet" },
+		]);
+	});
+
 	it("#given tavily response #when normalizing #then returns common results", () => {
 		// given
 		const payload = {
