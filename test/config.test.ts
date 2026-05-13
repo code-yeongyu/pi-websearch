@@ -72,6 +72,32 @@ describe("loadWebsearchConfig", () => {
 		}
 	});
 
+	it("#given backend alias config #when loading config #then preserves explicit override", async () => {
+		// given
+		const root = await makeTempHome();
+		const projectPi = join(root, ".pi");
+		await mkdir(projectPi, { recursive: true });
+		await writeFile(
+			join(projectPi, "websearch.json"),
+			JSON.stringify({ backend: "brave", apiKey: "brave-test" }),
+			"utf8",
+		);
+
+		try {
+			// when
+			const result = await loadWebsearchConfig({ cwd: root, homeDir: root });
+
+			// then
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.source).toBe(join(projectPi, "websearch.json"));
+				expect(result.config.providers).toEqual([{ provider: "brave", apiKey: "brave-test" }]);
+			}
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
 	it("#given multiple providers #when loading config #then preserves routing policy", async () => {
 		// given
 		const root = await makeTempHome();

@@ -117,7 +117,7 @@ function parseJsonObject(content: string): JsonObject | null {
 }
 
 function providerEntryFromObject(raw: JsonObject): SearchProviderEntry | null {
-	const provider = optionalProvider(raw.provider);
+	const provider = optionalProvider(raw.provider) ?? optionalProvider(raw.backend);
 	if (!provider) return null;
 
 	const config: SearchProviderEntry = { provider };

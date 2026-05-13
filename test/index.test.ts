@@ -93,6 +93,25 @@ describe("websearch extension toggle", () => {
 		expect(context.ui.setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
 		expect(context.ui.setWidget).toHaveBeenCalledWith("pi-websearch", undefined);
 	});
+
+	it("#given non-native active model and no config #when session starts #then enables default without warning", async () => {
+		// given
+		delete process.env[ENABLE_ENV];
+		const sessionHandlers = new Map<string, (event: object, ctx: ProviderBypassContext) => Promise<void> | void>();
+		const on = vi.fn((name: string, handler: (event: object, ctx: ProviderBypassContext) => Promise<void> | void) => {
+			sessionHandlers.set(name, handler);
+		});
+		const context = providerBypassContext("apitopia");
+
+		// when
+		websearchExtension({ registerTool: vi.fn(), on, registerCommand: vi.fn() } as never);
+		await sessionHandlers.get("session_start")?.({}, context);
+
+		// then
+		expect(context.ui.notify).not.toHaveBeenCalled();
+		expect(context.ui.setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
+		expect(context.ui.setWidget).toHaveBeenCalledWith("pi-websearch", undefined);
+	});
 });
 
 type ProviderBypassContext = {
