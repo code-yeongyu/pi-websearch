@@ -1,6 +1,6 @@
 # pi-websearch
 
-Provider-backed `web_search` tool for pi. Activation is explicit: if no config is found, the extension stays inactive and surfaces a TUI startup error.
+Provider-backed `web_search` tool for pi. It starts with zero configuration: OpenAI and Anthropic sessions defer silently to senpi's built-in provider-native web search, while other providers use the built-in DuckDuckGo HTML backend unless a config file overrides it.
 
 ## Tool Schema
 
@@ -24,16 +24,20 @@ The loader checks these files in order:
 2. `~/websearch.json`
 3. `~/.pi/websearch.json`
 
-Example:
+No config file is required for the default backend. For non-native providers, pi-websearch uses DuckDuckGo's HTML endpoint (`https://html.duckduckgo.com/html/`) because it is free and does not require an API key. Create a config file only when you want a different backend or routing policy.
+
+Example override:
 
 ```json
 {
-	"provider": "perplexity",
+	"backend": "perplexity",
 	"apiKey": "pplx-...",
 	"maxResults": 8,
 	"allowedDomains": ["docs.example.com"]
 }
 ```
+
+Legacy configs that use `"provider"` instead of `"backend"` continue to work.
 
 Multiple provider entries enable fallback and routing:
 
@@ -63,6 +67,8 @@ Multiple provider entries enable fallback and routing:
 
 ### Native auto-route
 
+If the active model provider is `openai` or `anthropic`, pi-websearch registers no startup warning and defers to senpi's built-in `openai-web-search` or `anthropic-web-search` extension. Those built-ins wire the provider-native tool directly into supported model requests, so this extension only handles non-native providers and explicit override configs.
+
 When `auto` is `true` (the default) and the active pi model exposes a server-hosted search tool, the extension prepends an implicit `{ id: "native", ... }` entry that reuses the model's resolved API key via `ExtensionContext.modelRegistry.getApiKeyAndHeaders`. The native entry tries first; on failure or when the model does not match, the configured providers handle the search. Disable with `"auto": false` if you want only the explicit `providers` list.
 
 Models that activate native routing (Q1 2026):
@@ -84,6 +90,7 @@ Routing strategies:
 
 Supported providers:
 
+- `duckduckgo-html`: DuckDuckGo HTML search endpoint. Requires no `apiKey`; used as the zero-config default.
 - `exa`: direct Exa search. Requires `apiKey`.
 - `tavily`: direct Tavily search. Requires `apiKey`.
 - `brave`: Brave Search API. Requires `apiKey`.
