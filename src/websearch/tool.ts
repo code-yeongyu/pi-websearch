@@ -59,6 +59,17 @@ export function createWebSearchTool(getConfig: ConfigProvider) {
 
 			const loaded = getConfig();
 			if (!loaded.ok) {
+				if (loaded.reason === "provider_native_bypass") {
+					const details: SearchDetails = {
+						provider: "openai",
+						query: params.query,
+						results: [],
+						durationMs: 0,
+						truncated: false,
+						error: loaded.message,
+					};
+					return { content: [{ type: "text", text: loaded.message }], details };
+				}
 				const details: SearchDetails = {
 					provider: "exa",
 					query: params.query,

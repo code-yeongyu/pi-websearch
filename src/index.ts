@@ -7,6 +7,12 @@ import type { ConfigLoadResult } from "./websearch/types.js";
 const STATUS_KEY = "pi-websearch";
 const WIDGET_KEY = "pi-websearch";
 const ENABLE_ENV = "PI_WEBSEARCH";
+const NATIVE_BYPASS_MESSAGE = "Native provider web search is handled by the built-in provider extension.";
+
+type ProviderModelContext = {
+	provider?: string;
+	api?: string;
+};
 
 function parseEnableEnv(envVar: string): boolean {
 	const envValue = process.env[envVar];
@@ -31,6 +37,16 @@ export function isWebsearchEnabled(): boolean {
 	return parseEnableEnv(ENABLE_ENV);
 }
 
+function isProviderNativeBypass(model: ProviderModelContext | undefined): boolean {
+	return (
+		model?.provider === "openai" ||
+		model?.provider === "anthropic" ||
+		model?.api === "anthropic-messages" ||
+		model?.api === "openai-responses" ||
+		model?.api === "azure-openai-responses"
+	);
+}
+
 export default function (pi: ExtensionAPI): void {
 	// When PI_WEBSEARCH disables the extension, keep factory callable but skip all registration side effects.
 	if (!isWebsearchEnabled()) {
@@ -48,7 +64,7 @@ export default function (pi: ExtensionAPI): void {
 	}
 
 	function updateUi(ctx: ExtensionContext): void {
-		if (state.ok) {
+		if (state.ok || state.reason === "provider_native_bypass") {
 			ctx.ui.setStatus(STATUS_KEY, undefined);
 			ctx.ui.setWidget(WIDGET_KEY, undefined);
 			return;
@@ -61,7 +77,9 @@ export default function (pi: ExtensionAPI): void {
 	pi.registerTool(createWebSearchTool(() => state));
 
 	pi.on("session_start", async (_event, ctx) => {
-		state = await loadWebsearchConfig({ cwd: ctx.cwd });
+		state = isProviderNativeBypass(ctx.model)
+			? { ok: false, reason: "provider_native_bypass", message: NATIVE_BYPASS_MESSAGE }
+			: await loadWebsearchConfig({ cwd: ctx.cwd });
 		updateUi(ctx);
 	});
 
@@ -85,7 +103,12 @@ export default function (pi: ExtensionAPI): void {
 				);
 				return;
 			}
-			ctx.ui.notify(`Web search inactive: ${state.message}`, "error");
+			ctx.ui.notify(
+				state.reason === "provider_native_bypass"
+					? `Web search deferred: ${state.message}`
+					: `Web search inactive: ${state.message}`,
+				state.reason === "provider_native_bypass" ? "info" : "error",
+			);
 		},
 	});
 }

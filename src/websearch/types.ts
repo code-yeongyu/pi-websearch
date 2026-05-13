@@ -103,7 +103,12 @@ export interface JsonObject {
 
 export type ConfigLoadResult =
 	| { ok: true; config: WebsearchConfig; source: string }
-	| { ok: false; reason: "missing_config" | "invalid_config" | "missing_api_key"; message: string; source?: string };
+	| {
+			ok: false;
+			reason: "missing_config" | "invalid_config" | "missing_api_key" | "provider_native_bypass";
+			message: string;
+			source?: string;
+	  };
 
 export type ProviderValidationResult =
 	| { ok: true; config: SearchProviderEntry }

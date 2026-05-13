@@ -52,4 +52,69 @@ describe("websearch extension toggle", () => {
 		expect(on).toHaveBeenCalledTimes(2);
 		expect(registerCommand).toHaveBeenCalledTimes(1);
 	});
+
+	it("#given openai active model and no config #when session starts #then defers without warning", async () => {
+		// given
+		delete process.env[ENABLE_ENV];
+		const registerTool = vi.fn();
+		const sessionHandlers = new Map<string, (event: object, ctx: ProviderBypassContext) => Promise<void> | void>();
+		const on = vi.fn((name: string, handler: (event: object, ctx: ProviderBypassContext) => Promise<void> | void) => {
+			sessionHandlers.set(name, handler);
+		});
+		const registerCommand = vi.fn();
+		const context = providerBypassContext("openai");
+
+		// when
+		websearchExtension({ registerTool, on, registerCommand } as never);
+		await sessionHandlers.get("session_start")?.({}, context);
+
+		// then
+		expect(registerTool).toHaveBeenCalledTimes(1);
+		expect(context.ui.notify).not.toHaveBeenCalled();
+		expect(context.ui.setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
+		expect(context.ui.setWidget).toHaveBeenCalledWith("pi-websearch", undefined);
+	});
+
+	it("#given anthropic active model and no config #when session starts #then defers without warning", async () => {
+		// given
+		delete process.env[ENABLE_ENV];
+		const sessionHandlers = new Map<string, (event: object, ctx: ProviderBypassContext) => Promise<void> | void>();
+		const on = vi.fn((name: string, handler: (event: object, ctx: ProviderBypassContext) => Promise<void> | void) => {
+			sessionHandlers.set(name, handler);
+		});
+		const context = providerBypassContext("anthropic");
+
+		// when
+		websearchExtension({ registerTool: vi.fn(), on, registerCommand: vi.fn() } as never);
+		await sessionHandlers.get("session_start")?.({}, context);
+
+		// then
+		expect(context.ui.notify).not.toHaveBeenCalled();
+		expect(context.ui.setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
+		expect(context.ui.setWidget).toHaveBeenCalledWith("pi-websearch", undefined);
+	});
 });
+
+type ProviderBypassContext = {
+	cwd: string;
+	model: { provider: string };
+	ui: {
+		theme: { fg: (kind: string, message: string) => string };
+		setStatus: ReturnType<typeof vi.fn>;
+		setWidget: ReturnType<typeof vi.fn>;
+		notify: ReturnType<typeof vi.fn>;
+	};
+};
+
+function providerBypassContext(provider: string): ProviderBypassContext {
+	return {
+		cwd: "/missing-config-project",
+		model: { provider },
+		ui: {
+			theme: { fg: (_kind, message) => message },
+			setStatus: vi.fn(),
+			setWidget: vi.fn(),
+			notify: vi.fn(),
+		},
+	};
+}
