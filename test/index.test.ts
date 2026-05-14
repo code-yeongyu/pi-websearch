@@ -35,7 +35,7 @@ describe("websearch extension UI", () => {
 		);
 
 		// then
-		expect(setStatus).toHaveBeenCalledWith("pi-websearch", "WebSearch ready");
+		expect(setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
 		expect(setWidget).toHaveBeenCalledWith(
 			"pi-websearch",
 			[
@@ -46,7 +46,7 @@ describe("websearch extension UI", () => {
 		);
 	});
 
-	it("#given provider native model #when session starts #then shows delegated native widget", async () => {
+	it("#given provider native model #when session starts #then clears delegated native widget", async () => {
 		// given
 		let sessionStart: SessionHandler | undefined;
 		const setStatus = vi.fn();
@@ -72,11 +72,7 @@ describe("websearch extension UI", () => {
 		);
 
 		// then
-		expect(setStatus).toHaveBeenCalledWith("pi-websearch", "WebSearch native");
-		expect(setWidget).toHaveBeenCalledWith(
-			"pi-websearch",
-			["Web Search native", "OpenAI/Anthropic provider-native search handles this model"],
-			{ placement: "belowEditor" },
-		);
+		expect(setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
+		expect(setWidget).toHaveBeenCalledWith("pi-websearch", undefined);
 	});
 });

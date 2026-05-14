@@ -7,7 +7,6 @@ import type { ConfigLoadResult, SearchProviderEntry, WebsearchConfig } from "./w
 const STATUS_KEY = "pi-websearch";
 const WIDGET_KEY = "pi-websearch";
 const NATIVE_BYPASS_MESSAGE = "Native provider web search is handled by the built-in provider extension.";
-const NATIVE_WIDGET_LINES = ["Web Search native", "OpenAI/Anthropic provider-native search handles this model"];
 
 type ProviderModelContext = {
 	provider?: string;
@@ -50,19 +49,24 @@ export default function (pi: ExtensionAPI): void {
 		];
 	}
 
+	function clearUi(ctx: ExtensionContext): void {
+		if (ctx.hasUI === false) return;
+		ctx.ui.setStatus(STATUS_KEY, undefined);
+		ctx.ui.setWidget(WIDGET_KEY, undefined);
+	}
+
 	function updateUi(ctx: ExtensionContext): void {
 		if (ctx.hasUI === false) return;
 		if (state.ok) {
-			ctx.ui.setStatus(STATUS_KEY, "WebSearch ready");
+			ctx.ui.setStatus(STATUS_KEY, undefined);
 			ctx.ui.setWidget(WIDGET_KEY, readyWidgetLines(state), { placement: "belowEditor" });
 			return;
 		}
 		if (state.reason === "provider_native_bypass") {
-			ctx.ui.setStatus(STATUS_KEY, "WebSearch native");
-			ctx.ui.setWidget(WIDGET_KEY, NATIVE_WIDGET_LINES, { placement: "belowEditor" });
+			clearUi(ctx);
 			return;
 		}
-		ctx.ui.setStatus(STATUS_KEY, ctx.ui.theme.fg("error", "WebSearch config missing"));
+		ctx.ui.setStatus(STATUS_KEY, undefined);
 		ctx.ui.setWidget(WIDGET_KEY, [`Web Search inactive: ${state.message}`], { placement: "belowEditor" });
 		ctx.ui.notify(state.message, "error");
 	}
@@ -77,8 +81,7 @@ export default function (pi: ExtensionAPI): void {
 	});
 
 	pi.on("session_shutdown", async (_event, ctx) => {
-		ctx.ui.setStatus(STATUS_KEY, undefined);
-		ctx.ui.setWidget(WIDGET_KEY, undefined);
+		clearUi(ctx);
 	});
 
 	pi.registerCommand("websearch", {
