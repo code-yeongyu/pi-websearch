@@ -88,6 +88,18 @@ export interface SearchDetails {
 	error?: string;
 }
 
+export interface SearchProgressDetails {
+	phase: "searching";
+	query: string;
+	providerLabels: string[];
+	maxResults: number;
+	strategy?: RoutingStrategy;
+	allowedDomains?: string[];
+	blockedDomains?: string[];
+}
+
+export type SearchRenderDetails = SearchDetails | SearchProgressDetails;
+
 export interface SearchAttempt {
 	provider: SearchProvider;
 	entryId?: string;

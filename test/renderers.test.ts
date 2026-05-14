@@ -20,6 +20,29 @@ describe("renderSearchCall", () => {
 });
 
 describe("renderSearchResult", () => {
+	it("#given progress details #when rendering partial result #then includes route and result limit", () => {
+		// given / when
+		const component = renderSearchResult(
+			{
+				content: [{ type: "text", text: 'Searching "pi extensions" via default/duckduckgo-html (max 10)' }],
+				details: {
+					phase: "searching",
+					query: "pi extensions",
+					providerLabels: ["default/duckduckgo-html"],
+					maxResults: 10,
+				},
+			},
+			{ isPartial: true },
+			theme,
+		);
+
+		// then
+		const rendered = component.render(120).join("\n");
+		expect(rendered).toContain("Searching");
+		expect(rendered).toContain("default/duckduckgo-html");
+		expect(rendered).toContain("max 10");
+	});
+
 	it("#given search details #when rendering expanded result #then includes source rows", () => {
 		// given
 		const details: SearchDetails = {

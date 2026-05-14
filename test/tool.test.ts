@@ -32,12 +32,16 @@ function context(model: NativeModelInfo) {
 }
 
 type NativeExecutionContext = ReturnType<typeof context>;
+type ToolUpdate = {
+	content: Array<{ type: string; text?: string }>;
+	details?: unknown;
+};
 type NativeExecutable = {
 	execute(
 		toolCallId: string,
 		params: { query: string; allowed_domains?: string[]; blocked_domains?: string[] },
 		signal: AbortSignal | undefined,
-		onUpdate: undefined,
+		onUpdate: ((update: ToolUpdate) => void) | undefined,
 		ctx: NativeExecutionContext,
 	): ReturnType<typeof web_search.execute>;
 };
@@ -170,6 +174,39 @@ describe("web_search tool definition", () => {
 		expect(requestedUrls).toEqual(["https://gateway.example.com/exa"]);
 		expect(details.provider).toBe("exa");
 		expect(details.entryId).toBe("manual");
+	});
+
+	it("#given configured provider #when execution starts #then emits route progress details for the TUI", async () => {
+		// given
+		const updates: Array<{ content: Array<{ type: string; text?: string }>; details?: unknown }> = [];
+		vi.stubGlobal("fetch", async (): Promise<Response> => {
+			return jsonResponse({ results: [{ title: "Manual", url: "https://manual.example.com", text: "manual" }] });
+		});
+		const tool = withNativeExecutionContext(
+			createWebSearchTool(() => ({ ok: true, config: config(false, 4), source: "test" })),
+		);
+
+		// when
+		const result = await tool.execute(
+			"tool-call",
+			{ query: "route progress" },
+			undefined,
+			(update) => updates.push(update),
+			context({ provider: "openai", id: "gpt-5.5", baseUrl: "https://gateway.example.com/v1" }),
+		);
+
+		// then
+		const details = result.details as SearchDetails;
+		expect(details.provider).toBe("exa");
+		expect(updates[0]).toMatchObject({
+			content: [{ type: "text", text: 'Searching "route progress" via manual/exa (max 4)' }],
+			details: {
+				phase: "searching",
+				query: "route progress",
+				providerLabels: ["manual/exa"],
+				maxResults: 4,
+			},
+		});
 	});
 
 	it("#given auto enabled and unsupported active model #when executing #then does not prepend native provider", async () => {
