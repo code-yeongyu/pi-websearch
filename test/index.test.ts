@@ -9,7 +9,7 @@ function createTheme() {
 }
 
 describe("websearch extension UI", () => {
-	it("#given default backend #when session starts #then shows useful provider widget", async () => {
+	it("#given default backend #when session starts #then clears startup widget", async () => {
 		// given
 		let sessionStart: SessionHandler | undefined;
 		const setStatus = vi.fn();
@@ -36,14 +36,7 @@ describe("websearch extension UI", () => {
 
 		// then
 		expect(setStatus).toHaveBeenCalledWith("pi-websearch", undefined);
-		expect(setWidget).toHaveBeenCalledWith(
-			"pi-websearch",
-			[
-				"Web Search ready",
-				"source: default:duckduckgo-html · route: default/duckduckgo-html · strategy: priority · auto on",
-			],
-			{ placement: "belowEditor" },
-		);
+		expect(setWidget).toHaveBeenCalledWith("pi-websearch", undefined);
 	});
 
 	it("#given provider native model #when session starts #then clears delegated native widget", async () => {

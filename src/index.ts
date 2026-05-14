@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 
 import { loadWebsearchConfig } from "./websearch/config.js";
 import { createWebSearchTool } from "./websearch/tool.js";
-import type { ConfigLoadResult, SearchProviderEntry, WebsearchConfig } from "./websearch/types.js";
+import type { ConfigLoadResult, WebsearchConfig } from "./websearch/types.js";
 
 const STATUS_KEY = "pi-websearch";
 const WIDGET_KEY = "pi-websearch";
@@ -30,23 +30,12 @@ export default function (pi: ExtensionAPI): void {
 		message: "Missing websearch config. Create .pi/websearch.json or ~/.pi/websearch.json before starting pi.",
 	};
 
-	function providerLabel(provider: SearchProviderEntry): string {
+	function providerLabel(provider: WebsearchConfig["providers"][number]): string {
 		return provider.id ? `${provider.id}/${provider.provider}` : provider.provider;
-	}
-
-	function providerRoute(config: WebsearchConfig): string {
-		return config.providers.map(providerLabel).join(" -> ");
 	}
 
 	function providerList(config: WebsearchConfig): string {
 		return config.providers.map(providerLabel).join(", ");
-	}
-
-	function readyWidgetLines(loaded: Extract<ConfigLoadResult, { ok: true }>): string[] {
-		return [
-			"Web Search ready",
-			`source: ${loaded.source} · route: ${providerRoute(loaded.config)} · strategy: ${loaded.config.strategy} · auto ${loaded.config.auto ? "on" : "off"}`,
-		];
 	}
 
 	function clearUi(ctx: ExtensionContext): void {
@@ -58,16 +47,14 @@ export default function (pi: ExtensionAPI): void {
 	function updateUi(ctx: ExtensionContext): void {
 		if (ctx.hasUI === false) return;
 		if (state.ok) {
-			ctx.ui.setStatus(STATUS_KEY, undefined);
-			ctx.ui.setWidget(WIDGET_KEY, readyWidgetLines(state), { placement: "belowEditor" });
+			clearUi(ctx);
 			return;
 		}
 		if (state.reason === "provider_native_bypass") {
 			clearUi(ctx);
 			return;
 		}
-		ctx.ui.setStatus(STATUS_KEY, undefined);
-		ctx.ui.setWidget(WIDGET_KEY, [`Web Search inactive: ${state.message}`], { placement: "belowEditor" });
+		clearUi(ctx);
 		ctx.ui.notify(state.message, "error");
 	}
 
