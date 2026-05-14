@@ -98,7 +98,20 @@ export interface SearchProgressDetails {
 	blockedDomains?: string[];
 }
 
-export type SearchRenderDetails = SearchDetails | SearchProgressDetails;
+export type ConfigLoadFailureReason =
+	| "missing_config"
+	| "invalid_config"
+	| "missing_api_key"
+	| "provider_native_bypass";
+
+export interface SearchErrorDetails {
+	phase: "error";
+	query: string;
+	error: string;
+	reason?: ConfigLoadFailureReason;
+}
+
+export type SearchRenderDetails = SearchDetails | SearchProgressDetails | SearchErrorDetails;
 
 export interface SearchAttempt {
 	provider: SearchProvider;
@@ -118,7 +131,7 @@ export type ConfigLoadResult =
 	| { ok: true; config: WebsearchConfig; source: string }
 	| {
 			ok: false;
-			reason: "missing_config" | "invalid_config" | "missing_api_key" | "provider_native_bypass";
+			reason: ConfigLoadFailureReason;
 			message: string;
 			source?: string;
 	  };

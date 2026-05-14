@@ -11,17 +11,21 @@ import type {
 
 const MAX_ERROR_DETAIL_LENGTH = 500;
 
+function isJsonObject(value: unknown): value is JsonObject {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function truncate(value: string, max: number): string {
 	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
 function extractErrorDetail(payload: unknown, bodyText: string): string {
-	if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
-		const obj = payload as JsonObject;
+	if (isJsonObject(payload)) {
+		const obj = payload;
 		const error = obj.error;
 		if (typeof error === "string" && error.length > 0) return truncate(error, MAX_ERROR_DETAIL_LENGTH);
-		if (typeof error === "object" && error !== null && !Array.isArray(error)) {
-			const message = (error as JsonObject).message;
+		if (isJsonObject(error)) {
+			const message = error.message;
 			if (typeof message === "string" && message.length > 0) return truncate(message, MAX_ERROR_DETAIL_LENGTH);
 		}
 		const message = obj.message;

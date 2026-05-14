@@ -47,8 +47,12 @@ export interface ConfigLoadOptions {
 	homeDir?: string;
 }
 
-function isObject(value: JsonValue): value is JsonObject {
+function isJsonObject(value: unknown): value is JsonObject {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function oneOf<TValue extends string>(values: readonly TValue[], value: unknown): value is TValue {
+	return typeof value === "string" && (values as readonly string[]).includes(value);
 }
 
 function isStringArray(value: JsonValue | undefined): value is string[] {
@@ -68,31 +72,23 @@ function optionalBoolean(value: JsonValue | undefined): boolean | undefined {
 }
 
 function optionalProvider(value: JsonValue | undefined): SearchProvider | undefined {
-	return typeof value === "string" && PROVIDERS.includes(value as SearchProvider)
-		? (value as SearchProvider)
-		: undefined;
+	return oneOf(PROVIDERS, value) ? value : undefined;
 }
 
 function optionalContextSize(value: JsonValue | undefined): SearchContextSize | undefined {
-	return typeof value === "string" && CONTEXT_SIZES.includes(value as SearchContextSize)
-		? (value as SearchContextSize)
-		: undefined;
+	return oneOf(CONTEXT_SIZES, value) ? value : undefined;
 }
 
 function optionalCodexMode(value: JsonValue | undefined): CodexSearchMode | undefined {
-	return typeof value === "string" && CODEX_MODES.includes(value as CodexSearchMode)
-		? (value as CodexSearchMode)
-		: undefined;
+	return oneOf(CODEX_MODES, value) ? value : undefined;
 }
 
 function optionalStrategy(value: JsonValue | undefined): RoutingStrategy | undefined {
-	return typeof value === "string" && STRATEGIES.includes(value as RoutingStrategy)
-		? (value as RoutingStrategy)
-		: undefined;
+	return oneOf(STRATEGIES, value) ? value : undefined;
 }
 
 function optionalLocation(value: JsonValue | undefined): SearchUserLocation | undefined {
-	if (!value || !isObject(value)) return undefined;
+	if (!isJsonObject(value)) return undefined;
 	const location: SearchUserLocation = {};
 	const country = optionalString(value.country);
 	const region = optionalString(value.region);
@@ -112,8 +108,7 @@ function parseJsonObject(content: string): JsonObject | null {
 	} catch {
 		return null;
 	}
-	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
-	return parsed as JsonObject;
+	return isJsonObject(parsed) ? parsed : null;
 }
 
 function providerEntryFromObject(raw: JsonObject): SearchProviderEntry | null {
@@ -158,7 +153,7 @@ function configFromObject(raw: JsonObject): WebsearchConfig | null {
 	if (rawProviders) {
 		if (optionalProvider(raw.provider)) return null;
 		const providers = rawProviders
-			.map((value) => (isObject(value) ? providerEntryFromObject(value) : null))
+			.map((value) => (isJsonObject(value) ? providerEntryFromObject(value) : null))
 			.filter((entry): entry is SearchProviderEntry => entry !== null);
 		const strategy = optionalStrategy(raw.strategy) ?? "priority";
 		const fallback = optionalBoolean(raw.fallback) ?? true;

@@ -6,7 +6,7 @@ import { renderSearchCall, renderSearchResult } from "./renderers.js";
 import { createSearchRoutingState, formatSearchText, performSearch, type SearchRoutingState } from "./search.js";
 import type {
 	ConfigLoadResult,
-	SearchDetails,
+	SearchErrorDetails,
 	SearchProgressDetails,
 	SearchProviderEntry,
 	SearchRenderDetails,
@@ -27,6 +27,7 @@ const Params = Type.Object(
 );
 
 export type ConfigProvider = () => ConfigLoadResult;
+type WebSearchTool = ReturnType<typeof defineTool<typeof Params, SearchRenderDetails>>;
 
 interface WebSearchToolContext {
 	model?: NativeModelInfo;
@@ -48,7 +49,11 @@ function formatSearchProgressText(details: SearchProgressDetails): string {
 	return `Searching "${details.query}" via ${route} (max ${details.maxResults})`;
 }
 
-export function createWebSearchTool(getConfig: ConfigProvider) {
+function searchErrorDetails(query: string, error: string, reason?: SearchErrorDetails["reason"]): SearchErrorDetails {
+	return { phase: "error", query, error, ...(reason ? { reason } : {}) };
+}
+
+export function createWebSearchTool(getConfig: ConfigProvider): WebSearchTool {
 	let routingState: SearchRoutingState | undefined;
 	let routingKey = "";
 
@@ -62,38 +67,13 @@ export function createWebSearchTool(getConfig: ConfigProvider) {
 		async execute(_toolCallId, params, signal, onUpdate, ctx?: WebSearchToolContext) {
 			if (params.allowed_domains?.length && params.blocked_domains?.length) {
 				const message = "Error: Cannot specify both allowed_domains and blocked_domains in the same request";
-				const details: SearchDetails = {
-					provider: "exa",
-					query: params.query,
-					results: [],
-					durationMs: 0,
-					truncated: false,
-					error: message,
-				};
+				const details = searchErrorDetails(params.query, message);
 				return { content: [{ type: "text", text: message }], details };
 			}
 
 			const loaded = getConfig();
 			if (!loaded.ok) {
-				if (loaded.reason === "provider_native_bypass") {
-					const details: SearchDetails = {
-						provider: "openai",
-						query: params.query,
-						results: [],
-						durationMs: 0,
-						truncated: false,
-						error: loaded.message,
-					};
-					return { content: [{ type: "text", text: loaded.message }], details };
-				}
-				const details: SearchDetails = {
-					provider: "exa",
-					query: params.query,
-					results: [],
-					durationMs: 0,
-					truncated: false,
-					error: loaded.message,
-				};
+				const details = searchErrorDetails(params.query, loaded.message, loaded.reason);
 				return { content: [{ type: "text", text: loaded.message }], details };
 			}
 

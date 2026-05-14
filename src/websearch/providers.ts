@@ -64,6 +64,10 @@ function resolveDomainFilters(
 	return {};
 }
 
+function isJsonObject(value: unknown): value is JsonObject {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getObject(value: JsonValue | undefined): JsonObject | undefined {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : undefined;
 }
@@ -160,7 +164,7 @@ function collect(items: Array<SearchResultItem | null>, max = 50): SearchResultI
 }
 
 function parseObjectPayload(payload: unknown): JsonObject {
-	if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) return payload as JsonObject;
+	if (isJsonObject(payload)) return payload;
 	return {};
 }
 

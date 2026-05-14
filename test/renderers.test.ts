@@ -70,4 +70,20 @@ describe("renderSearchResult", () => {
 		expect(rendered).toContain("route exa/exa-search:1");
 		expect(rendered).toContain("https://example.com/pi");
 	});
+
+	it("#given error details #when rendering result #then displays the error message", () => {
+		// given / when
+		const component = renderSearchResult(
+			{
+				content: [{ type: "text", text: "Invalid provider config" }],
+				details: { phase: "error", query: "pi extensions", error: "Invalid provider config" },
+			},
+			{},
+			theme,
+		);
+
+		// then
+		const rendered = component.render(120).join("\n");
+		expect(rendered).toContain("Invalid provider config");
+	});
 });

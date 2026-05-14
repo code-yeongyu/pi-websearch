@@ -1,6 +1,6 @@
 import { Text } from "@mariozechner/pi-tui";
 
-import type { SearchDetails, SearchProgressDetails, SearchRenderDetails } from "./types.js";
+import type { SearchDetails, SearchErrorDetails, SearchProgressDetails, SearchRenderDetails } from "./types.js";
 
 interface ThemeLike {
 	bold(value: string): string;
@@ -46,6 +46,10 @@ function isSearchProgressDetails(details: SearchRenderDetails | undefined): deta
 	return details !== undefined && "phase" in details && details.phase === "searching";
 }
 
+function isSearchErrorDetails(details: SearchRenderDetails): details is SearchErrorDetails {
+	return "phase" in details && details.phase === "error";
+}
+
 export function renderSearchCall(args: SearchArgs, theme: ThemeLike): Text {
 	const head = theme.fg("toolTitle", theme.bold("web_search "));
 	const query = theme.fg("accent", `"${shorten(args.query, 90)}"`);
@@ -75,6 +79,7 @@ export function renderSearchResult(
 	const details = result.details;
 	if (!details) return new Text(theme.fg("muted", result.content[0]?.text ?? ""), 0, 0);
 	if (isSearchProgressDetails(details)) return new Text(theme.fg("muted", result.content[0]?.text ?? ""), 0, 0);
+	if (isSearchErrorDetails(details)) return new Text(theme.fg("error", details.error), 0, 0);
 	if (details.error) return new Text(theme.fg("error", details.error), 0, 0);
 
 	const count = details.results.length;

@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { NativeModelInfo, NativeModelRegistry } from "../src/websearch/native.js";
 import { createWebSearchTool, web_search } from "../src/websearch/tool.js";
-import type { SearchDetails, SearchProviderEntry, WebsearchConfig } from "../src/websearch/types.js";
+import type {
+	SearchDetails,
+	SearchErrorDetails,
+	SearchProviderEntry,
+	WebsearchConfig,
+} from "../src/websearch/types.js";
 
 function jsonResponse(payload: object, status = 200): Response {
 	return new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } });
@@ -207,6 +212,61 @@ describe("web_search tool definition", () => {
 				maxResults: 4,
 			},
 		});
+	});
+
+	it("#given invalid domain filters #when executing #then returns error details without spoofing a provider", async () => {
+		// given
+		const tool = withNativeExecutionContext(
+			createWebSearchTool(() => ({ ok: true, config: config(false), source: "test" })),
+		);
+
+		// when
+		const result = await tool.execute(
+			"tool-call",
+			{ query: "bad filters", allowed_domains: ["example.com"], blocked_domains: ["example.org"] },
+			undefined,
+			undefined,
+			context({ provider: "openai", id: "gpt-5.5", baseUrl: "https://gateway.example.com/v1" }),
+		);
+
+		// then
+		const details = result.details as SearchErrorDetails;
+		expect(details).toEqual({
+			phase: "error",
+			query: "bad filters",
+			error: "Error: Cannot specify both allowed_domains and blocked_domains in the same request",
+		});
+		expect("provider" in details).toBe(false);
+	});
+
+	it("#given config load failure #when executing #then returns load error details without provider attribution", async () => {
+		// given
+		const tool = withNativeExecutionContext(
+			createWebSearchTool(() => ({
+				ok: false,
+				reason: "invalid_config",
+				message: "Invalid provider config in .pi/websearch.json",
+			})),
+		);
+
+		// when
+		const result = await tool.execute(
+			"tool-call",
+			{ query: "config failure" },
+			undefined,
+			undefined,
+			context({ provider: "openai", id: "gpt-5.5", baseUrl: "https://gateway.example.com/v1" }),
+		);
+
+		// then
+		const details = result.details as SearchErrorDetails;
+		expect(details).toEqual({
+			phase: "error",
+			query: "config failure",
+			error: "Invalid provider config in .pi/websearch.json",
+			reason: "invalid_config",
+		});
+		expect("provider" in details).toBe(false);
 	});
 
 	it("#given auto enabled and unsupported active model #when executing #then does not prepend native provider", async () => {
