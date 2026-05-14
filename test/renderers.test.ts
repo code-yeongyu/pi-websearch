@@ -71,6 +71,32 @@ describe("renderSearchResult", () => {
 		expect(rendered).toContain("https://example.com/pi");
 	});
 
+	it("#given search details #when rendering collapsed result #then includes top source rows", () => {
+		// given
+		const details: SearchDetails = {
+			provider: "exa",
+			entryId: "exa-search",
+			query: "pi extensions",
+			results: [
+				{ title: "Pi", url: "https://example.com/pi", snippet: "Pi docs" },
+				{ title: "Extensions", url: "https://example.com/extensions" },
+			],
+			durationMs: 42,
+			truncated: false,
+			strategy: "priority",
+		};
+
+		// when
+		const component = renderSearchResult({ content: [{ type: "text", text: "ok" }], details }, {}, theme);
+
+		// then
+		const rendered = component.render(120).join("\n");
+		expect(rendered).toContain("2 results");
+		expect(rendered).toContain("Pi");
+		expect(rendered).toContain("https://example.com/pi");
+		expect(rendered).toContain("Pi docs");
+	});
+
 	it("#given error details #when rendering result #then displays the error message", () => {
 		// given / when
 		const component = renderSearchResult(

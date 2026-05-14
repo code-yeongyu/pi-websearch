@@ -92,14 +92,17 @@ export function renderSearchResult(
 		) +
 		(details.truncated ? theme.fg("warning", " (truncated)") : "");
 
-	if (!options.expanded || count === 0) return new Text(summary, 0, 0);
+	if (count === 0) return new Text(summary, 0, 0);
 
 	const attempts = attemptLabel(details);
-	const rows = attempts ? [summary, theme.fg("muted", `route ${attempts}`)] : [summary];
-	for (const item of details.results.slice(0, 8)) {
+	const rows = options.expanded && attempts ? [summary, theme.fg("muted", `route ${attempts}`)] : [summary];
+	const visibleLimit = options.expanded ? 8 : 3;
+	for (const item of details.results.slice(0, visibleLimit)) {
 		rows.push(`${theme.fg("accent", shorten(item.title, 80))} ${theme.fg("dim", shorten(item.url, 100))}`);
 		if (item.snippet) rows.push(theme.fg("muted", `  ${shorten(item.snippet, 140)}`));
 	}
-	if (details.results.length > 8) rows.push(theme.fg("dim", `… ${details.results.length - 8} more sources`));
+	if (details.results.length > visibleLimit) {
+		rows.push(theme.fg("dim", `… ${details.results.length - visibleLimit} more sources`));
+	}
 	return new Text(rows.join("\n"), 0, 0);
 }
