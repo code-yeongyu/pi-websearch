@@ -30,8 +30,8 @@ export type ConfigProvider = () => ConfigLoadResult;
 type WebSearchTool = ReturnType<typeof defineTool<typeof Params, SearchRenderDetails>>;
 
 interface WebSearchToolContext {
-	model?: NativeModelInfo;
-	modelRegistry?: NativeModelRegistry;
+	model: NativeModelInfo | undefined;
+	modelRegistry: NativeModelRegistry;
 }
 
 async function configWithNativeRoute(config: WebsearchConfig, ctx?: WebSearchToolContext): Promise<WebsearchConfig> {
@@ -102,17 +102,13 @@ export function createWebSearchTool(getConfig: ConfigProvider): WebSearchTool {
 				routingState = createSearchRoutingState(config.providers.length);
 				routingKey = nextRoutingKey;
 			}
-			const details = await performSearch(
-				config,
-				{
-					query: params.query,
-					maxResults,
-					allowedDomains: params.allowed_domains,
-					blockedDomains: params.blocked_domains,
-				},
-				signal,
-				routingState,
-			);
+			const request = {
+				query: params.query,
+				maxResults,
+				...(params.allowed_domains === undefined ? {} : { allowedDomains: params.allowed_domains }),
+				...(params.blocked_domains === undefined ? {} : { blockedDomains: params.blocked_domains }),
+			};
+			const details = await performSearch(config, request, signal, routingState);
 			return { content: [{ type: "text", text: formatSearchText(details) }], details };
 		},
 		renderCall: (args, theme) => renderSearchCall(args, theme),

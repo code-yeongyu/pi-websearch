@@ -90,10 +90,10 @@ function optionalStrategy(value: JsonValue | undefined): RoutingStrategy | undef
 function optionalLocation(value: JsonValue | undefined): SearchUserLocation | undefined {
 	if (!isJsonObject(value)) return undefined;
 	const location: SearchUserLocation = {};
-	const country = optionalString(value.country);
-	const region = optionalString(value.region);
-	const city = optionalString(value.city);
-	const timezone = optionalString(value.timezone);
+	const country = optionalString(value["country"]);
+	const region = optionalString(value["region"]);
+	const city = optionalString(value["city"]);
+	const timezone = optionalString(value["timezone"]);
 	if (country) location.country = country;
 	if (region) location.region = region;
 	if (city) location.city = city;
@@ -112,23 +112,25 @@ function parseJsonObject(content: string): JsonObject | null {
 }
 
 function providerEntryFromObject(raw: JsonObject): SearchProviderEntry | null {
-	const provider = optionalProvider(raw.provider) ?? optionalProvider(raw.backend);
+	const provider = optionalProvider(raw["provider"]) ?? optionalProvider(raw["backend"]);
 	if (!provider) return null;
 
 	const config: SearchProviderEntry = { provider };
-	const id = optionalString(raw.id);
-	const apiKey = optionalString(raw.apiKey);
-	const baseUrl = optionalString(raw.baseUrl);
-	const searchEngineId = optionalString(raw.searchEngineId);
-	const maxResults = optionalNumber(raw.maxResults);
-	const model = optionalString(raw.model);
-	const codexMode = optionalCodexMode(raw.codexMode);
-	const searchContextSize = optionalContextSize(raw.searchContextSize);
-	const allowedDomains = isStringArray(raw.allowedDomains) ? raw.allowedDomains : undefined;
-	const blockedDomains = isStringArray(raw.blockedDomains) ? raw.blockedDomains : undefined;
-	const userLocation = optionalLocation(raw.userLocation);
-	const priority = optionalNumber(raw.priority);
-	const weight = optionalNumber(raw.weight);
+	const id = optionalString(raw["id"]);
+	const apiKey = optionalString(raw["apiKey"]);
+	const baseUrl = optionalString(raw["baseUrl"]);
+	const searchEngineId = optionalString(raw["searchEngineId"]);
+	const maxResults = optionalNumber(raw["maxResults"]);
+	const model = optionalString(raw["model"]);
+	const codexMode = optionalCodexMode(raw["codexMode"]);
+	const searchContextSize = optionalContextSize(raw["searchContextSize"]);
+	const rawAllowedDomains = raw["allowedDomains"];
+	const rawBlockedDomains = raw["blockedDomains"];
+	const allowedDomains = isStringArray(rawAllowedDomains) ? rawAllowedDomains : undefined;
+	const blockedDomains = isStringArray(rawBlockedDomains) ? rawBlockedDomains : undefined;
+	const userLocation = optionalLocation(raw["userLocation"]);
+	const priority = optionalNumber(raw["priority"]);
+	const weight = optionalNumber(raw["weight"]);
 
 	if (id) config.id = id;
 	if (apiKey) config.apiKey = apiKey;
@@ -148,15 +150,16 @@ function providerEntryFromObject(raw: JsonObject): SearchProviderEntry | null {
 }
 
 function configFromObject(raw: JsonObject): WebsearchConfig | null {
-	const auto = optionalBoolean(raw.auto) ?? true;
-	const rawProviders = Array.isArray(raw.providers) ? raw.providers : undefined;
+	const auto = optionalBoolean(raw["auto"]) ?? true;
+	const providersValue = raw["providers"];
+	const rawProviders = Array.isArray(providersValue) ? providersValue : undefined;
 	if (rawProviders) {
-		if (optionalProvider(raw.provider)) return null;
+		if (optionalProvider(raw["provider"])) return null;
 		const providers = rawProviders
 			.map((value) => (isJsonObject(value) ? providerEntryFromObject(value) : null))
 			.filter((entry): entry is SearchProviderEntry => entry !== null);
-		const strategy = optionalStrategy(raw.strategy) ?? "priority";
-		const fallback = optionalBoolean(raw.fallback) ?? true;
+		const strategy = optionalStrategy(raw["strategy"]) ?? "priority";
+		const fallback = optionalBoolean(raw["fallback"]) ?? true;
 		return { strategy, fallback, auto, providers };
 	}
 

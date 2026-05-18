@@ -175,15 +175,15 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 	if (config.provider === "exa") {
 		const headers = contentHeaders({ "x-api-key": config.apiKey ?? "" });
 		const body: JsonObject = { query: request.query, numResults: clamp(maxResults, 1, 20) };
-		if (allowedDomains) body.includeDomains = allowedDomains;
-		if (blockedDomains) body.excludeDomains = blockedDomains;
+		if (allowedDomains) body["includeDomains"] = allowedDomains;
+		if (blockedDomains) body["excludeDomains"] = blockedDomains;
 		return { url: providerUrl(config), init: { method: "POST", headers }, body };
 	}
 
 	if (config.provider === "tavily") {
 		const body: JsonObject = { query: request.query, max_results: clamp(maxResults, 1, 20) };
-		if (allowedDomains) body.include_domains = allowedDomains;
-		if (blockedDomains) body.exclude_domains = blockedDomains;
+		if (allowedDomains) body["include_domains"] = allowedDomains;
+		if (blockedDomains) body["exclude_domains"] = blockedDomains;
 		return {
 			url: providerUrl(config),
 			init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
@@ -236,8 +236,8 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 				search_result: true,
 				count: clamp(maxResults, 1, 50),
 			};
-			if (allowedDomains?.[0]) webSearch.search_domain_filter = allowedDomains[0];
-			if (config.searchContextSize) webSearch.content_size = config.searchContextSize;
+			if (allowedDomains?.[0]) webSearch["search_domain_filter"] = allowedDomains[0];
+			if (config.searchContextSize) webSearch["content_size"] = config.searchContextSize;
 			return {
 				url: providerUrl(config),
 				init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
@@ -254,7 +254,7 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 			search_query: appendDomainFilters(request.query, undefined, blockedDomains),
 			count: clamp(maxResults, 1, 50),
 		};
-		if (allowedDomains?.[0]) body.search_domain_filter = allowedDomains[0];
+		if (allowedDomains?.[0]) body["search_domain_filter"] = allowedDomains[0];
 		return {
 			url: providerUrl(config),
 			init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
@@ -268,10 +268,10 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 				model: config.model,
 				messages: [{ role: "user", content: request.query }],
 			};
-			if (allowedDomains) body.search_domain_filter = allowedDomains;
+			if (allowedDomains) body["search_domain_filter"] = allowedDomains;
 			if (!allowedDomains && blockedDomains)
-				body.search_domain_filter = blockedDomains.map((domain) => `-${domain}`);
-			if (config.searchContextSize) body.web_search_options = { search_context_size: config.searchContextSize };
+				body["search_domain_filter"] = blockedDomains.map((domain) => `-${domain}`);
+			if (config.searchContextSize) body["web_search_options"] = { search_context_size: config.searchContextSize };
 			return {
 				url: providerUrl(config),
 				init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
@@ -280,8 +280,9 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 		}
 
 		const body: JsonObject = { query: request.query, max_results: clamp(maxResults, 1, 20) };
-		if (allowedDomains) body.search_domain_filter = allowedDomains;
-		if (!allowedDomains && blockedDomains) body.search_domain_filter = blockedDomains.map((domain) => `-${domain}`);
+		if (allowedDomains) body["search_domain_filter"] = allowedDomains;
+		if (!allowedDomains && blockedDomains)
+			body["search_domain_filter"] = blockedDomains.map((domain) => `-${domain}`);
 		return {
 			url: providerUrl(config),
 			init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
@@ -291,8 +292,9 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 
 	if (config.provider === "xai") {
 		const webSearchTool: JsonObject = { type: "web_search" };
-		if (allowedDomains) webSearchTool.filters = { allowed_domains: allowedDomains.slice(0, 5) };
-		if (!allowedDomains && blockedDomains) webSearchTool.filters = { excluded_domains: blockedDomains.slice(0, 5) };
+		if (allowedDomains) webSearchTool["filters"] = { allowed_domains: allowedDomains.slice(0, 5) };
+		if (!allowedDomains && blockedDomains)
+			webSearchTool["filters"] = { excluded_domains: blockedDomains.slice(0, 5) };
 		return {
 			url: providerUrl(config),
 			init: { method: "POST", headers: contentHeaders({ Authorization: `Bearer ${config.apiKey ?? ""}` }) },
@@ -307,8 +309,8 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 
 	if (config.provider === "anthropic") {
 		const webSearchTool: JsonObject = { type: "web_search_20250305", name: "web_search", max_uses: 8 };
-		if (allowedDomains) webSearchTool.allowed_domains = allowedDomains;
-		if (blockedDomains) webSearchTool.blocked_domains = blockedDomains;
+		if (allowedDomains) webSearchTool["allowed_domains"] = allowedDomains;
+		if (blockedDomains) webSearchTool["blocked_domains"] = blockedDomains;
 		return {
 			url: providerUrl(config),
 			init: {
@@ -331,9 +333,9 @@ export function buildSearchRequest(config: SearchProviderConfig, request: Search
 		type: "web_search",
 		external_web_access: (config.codexMode ?? "live") === "live",
 	};
-	if (config.searchContextSize) webSearchTool.search_context_size = config.searchContextSize;
-	if (allowedDomains) webSearchTool.filters = { allowed_domains: allowedDomains };
-	if (config.userLocation) webSearchTool.user_location = { type: "approximate", ...config.userLocation };
+	if (config.searchContextSize) webSearchTool["search_context_size"] = config.searchContextSize;
+	if (allowedDomains) webSearchTool["filters"] = { allowed_domains: allowedDomains };
+	if (config.userLocation) webSearchTool["user_location"] = { type: "approximate", ...config.userLocation };
 	const input = searchOnlyPrompt(
 		blockedDomains ? appendDomainFilters(request.query, undefined, blockedDomains) : request.query,
 	);
@@ -356,14 +358,14 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 
 	if (provider === "exa") {
 		return collect(
-			getArray(data.results).map((raw) => {
+			getArray(data["results"]).map((raw) => {
 				const item = getObject(raw);
 				return result(
-					getString(item?.title),
-					getString(item?.url),
-					getString(item?.text) ?? getString(item?.snippet),
+					getString(item?.["title"]),
+					getString(item?.["url"]),
+					getString(item?.["text"]) ?? getString(item?.["snippet"]),
 					undefined,
-					getNumber(item?.score),
+					getNumber(item?.["score"]),
 				);
 			}),
 		);
@@ -371,73 +373,73 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 
 	if (provider === "tavily") {
 		return collect(
-			getArray(data.results).map((raw) => {
+			getArray(data["results"]).map((raw) => {
 				const item = getObject(raw);
 				return result(
-					getString(item?.title),
-					getString(item?.url),
-					getString(item?.content),
+					getString(item?.["title"]),
+					getString(item?.["url"]),
+					getString(item?.["content"]),
 					undefined,
-					getNumber(item?.score),
+					getNumber(item?.["score"]),
 				);
 			}),
 		);
 	}
 
 	if (provider === "brave") {
-		const web = getObject(data.web);
+		const web = getObject(data["web"]);
 		return collect(
-			getArray(web?.results).map((raw) => {
+			getArray(web?.["results"]).map((raw) => {
 				const item = getObject(raw);
-				return result(getString(item?.title), getString(item?.url), getString(item?.description));
+				return result(getString(item?.["title"]), getString(item?.["url"]), getString(item?.["description"]));
 			}),
 		);
 	}
 
 	if (provider === "duckduckgo-html") {
-		return normalizeDuckDuckGoHtml(getString(data.html) ?? "");
+		return normalizeDuckDuckGoHtml(getString(data["html"]) ?? "");
 	}
 
 	if (provider === "serper") {
 		return collect(
-			getArray(data.organic).map((raw) => {
+			getArray(data["organic"]).map((raw) => {
 				const item = getObject(raw);
-				return result(getString(item?.title), getString(item?.link), getString(item?.snippet));
+				return result(getString(item?.["title"]), getString(item?.["link"]), getString(item?.["snippet"]));
 			}),
 		);
 	}
 
 	if (provider === "google-cse") {
 		return collect(
-			getArray(data.items).map((raw) => {
+			getArray(data["items"]).map((raw) => {
 				const item = getObject(raw);
-				return result(getString(item?.title), getString(item?.link), getString(item?.snippet));
+				return result(getString(item?.["title"]), getString(item?.["link"]), getString(item?.["snippet"]));
 			}),
 		);
 	}
 
 	if (provider === "z-ai") {
 		const chatResults = collect(
-			getArray(data.web_search).map((raw) => {
+			getArray(data["web_search"]).map((raw) => {
 				const item = getObject(raw);
 				return result(
-					getString(item?.title),
-					getString(item?.link),
-					getString(item?.content),
-					getString(item?.media),
+					getString(item?.["title"]),
+					getString(item?.["link"]),
+					getString(item?.["content"]),
+					getString(item?.["media"]),
 				);
 			}),
 		);
 		if (chatResults.length > 0) return chatResults;
 
 		return collect(
-			getArray(data.search_result).map((raw) => {
+			getArray(data["search_result"]).map((raw) => {
 				const item = getObject(raw);
 				return result(
-					getString(item?.title),
-					getString(item?.link),
-					getString(item?.content),
-					getString(item?.media),
+					getString(item?.["title"]),
+					getString(item?.["link"]),
+					getString(item?.["content"]),
+					getString(item?.["media"]),
 				);
 			}),
 		);
@@ -445,11 +447,15 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 
 	if (provider === "perplexity") {
 		const chatResults = collect(
-			getArray(data.search_results).map((raw) => {
+			getArray(data["search_results"]).map((raw) => {
 				const item = getObject(raw);
-				const searchResult = result(getString(item?.title), getString(item?.url), getString(item?.snippet));
+				const searchResult = result(
+					getString(item?.["title"]),
+					getString(item?.["url"]),
+					getString(item?.["snippet"]),
+				);
 				if (searchResult) {
-					const publishedAt = getString(item?.date) ?? getString(item?.last_updated);
+					const publishedAt = getString(item?.["date"]) ?? getString(item?.["last_updated"]);
 					if (publishedAt) searchResult.publishedAt = publishedAt;
 				}
 				return searchResult;
@@ -458,11 +464,15 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 		if (chatResults.length > 0) return chatResults;
 
 		return collect(
-			getArray(data.results).map((raw) => {
+			getArray(data["results"]).map((raw) => {
 				const item = getObject(raw);
-				const searchResult = result(getString(item?.title), getString(item?.url), getString(item?.snippet));
+				const searchResult = result(
+					getString(item?.["title"]),
+					getString(item?.["url"]),
+					getString(item?.["snippet"]),
+				);
 				if (searchResult) {
-					const publishedAt = getString(item?.date) ?? getString(item?.last_updated);
+					const publishedAt = getString(item?.["date"]) ?? getString(item?.["last_updated"]);
 					if (publishedAt) searchResult.publishedAt = publishedAt;
 				}
 				return searchResult;
@@ -471,59 +481,66 @@ export function normalizeSearchResponse(provider: SearchProvider, payload: unkno
 	}
 
 	if (provider === "anthropic") {
-		const content = getArray(data.content);
+		const content = getArray(data["content"]);
 		const text = content
 			.map(getObject)
-			.map((item) => getString(item?.text))
+			.map((item) => getString(item?.["text"]))
 			.filter((value): value is string => value !== undefined)
 			.join("\n");
 		return collect(
 			content.flatMap((raw) => {
 				const item = getObject(raw);
-				if (item?.type !== "web_search_tool_result") return [];
-				return getArray(item.content).map((searchRaw) => {
+				if (item?.["type"] !== "web_search_tool_result") return [];
+				return getArray(item["content"]).map((searchRaw) => {
 					const searchItem = getObject(searchRaw);
 					return result(
-						getString(searchItem?.title),
-						getString(searchItem?.url),
-						getString(searchItem?.page_age) ?? text,
+						getString(searchItem?.["title"]),
+						getString(searchItem?.["url"]),
+						getString(searchItem?.["page_age"]) ?? text,
 					);
 				});
 			}),
 		);
 	}
 
-	const output = getArray(data.output);
+	const output = getArray(data["output"]);
 	const sources = collect(
 		output.flatMap((raw) => {
 			const item = getObject(raw);
-			if (item?.type !== "web_search_call") return [];
-			const action = getObject(item.action);
-			return getArray(action?.sources).map((sourceRaw) => {
+			if (item?.["type"] !== "web_search_call") return [];
+			const action = getObject(item["action"]);
+			return getArray(action?.["sources"]).map((sourceRaw) => {
 				const source = getObject(sourceRaw);
-				const url = getString(source?.url);
+				const url = getString(source?.["url"]);
 				return result(url, url);
 			});
 		}),
 	);
-	const message = output.map(getObject).find((item) => item?.type === "message");
-	const content = getArray(message?.content)
+	const message = output.map(getObject).find((item) => item?.["type"] === "message");
+	const content = getArray(message?.["content"])
 		.map(getObject)
-		.find((item) => item?.type === "output_text");
-	const text = getString(content?.text);
+		.find((item) => item?.["type"] === "output_text");
+	const text = getString(content?.["text"]);
 	const annotationResults = collect(
-		getArray(content?.annotations).map((raw) => {
+		getArray(content?.["annotations"]).map((raw) => {
 			const item = getObject(raw);
-			return item?.type === "url_citation" ? result(getString(item.title), getString(item.url), text) : null;
+			return item?.["type"] === "url_citation"
+				? result(getString(item["title"]), getString(item["url"]), text)
+				: null;
 		}),
 	);
 	if (annotationResults.length > 0) return annotationResults;
-	if (sources.length > 0) return sources.map((source) => (source.snippet ? source : { ...source, snippet: text }));
+	if (sources.length > 0) {
+		return sources.map((source) => {
+			if (source.snippet || text === undefined) return source;
+			return { ...source, snippet: text };
+		});
+	}
 	const textUrls = resultsFromTextUrls(text);
 	if (textUrls.length > 0) return textUrls;
 	if (provider !== "xai") return annotationResults;
 	return collect(
-		getArray(data.citations).map((raw) => {
+		getArray(data["citations"]).map((raw) => {
 			const url = getString(raw);
 			return result(url, url, text);
 		}),
