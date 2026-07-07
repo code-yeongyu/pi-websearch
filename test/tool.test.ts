@@ -27,8 +27,11 @@ function config(auto: boolean, maxResults?: number): WebsearchConfig {
 	};
 }
 
-function context(model: NativeModelInfo) {
+function context(model: NativeModelInfo, availableModels: NativeModelInfo[] = []) {
 	const modelRegistry: NativeModelRegistry = {
+		getAvailable() {
+			return availableModels;
+		},
 		async getApiKeyAndHeaders() {
 			return { ok: true, apiKey: "native-test" };
 		},
@@ -267,6 +270,87 @@ describe("web_search tool definition", () => {
 			reason: "invalid_config",
 		});
 		expect("provider" in details).toBe(false);
+	});
+
+	it("#given auto enabled and registry has available search-capable models #when executing #then prepends discovered providers", async () => {
+		// given
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", async (input: string | URL | Request): Promise<Response> => {
+			const url = String(input);
+			requestedUrls.push(url);
+			if (url.includes("messages")) {
+				return jsonResponse({
+					content: [
+						{
+							type: "web_search_tool_result",
+							content: [{ title: "Claude", url: "https://claude.example.com", page_age: "1 day ago" }],
+						},
+					],
+				});
+			}
+			return jsonResponse({ results: [{ title: "Manual", url: "https://manual.example.com", text: "manual" }] });
+		});
+		const tool = withNativeExecutionContext(
+			createWebSearchTool(() => ({ ok: true, config: config(true), source: "test" })),
+		);
+		const availableModels: NativeModelInfo[] = [
+			{ provider: "anthropic", id: "claude-sonnet-4", baseUrl: "https://anthropic.gateway.example.com/v1" },
+			{ provider: "openai", id: "gpt-5.5", baseUrl: "https://openai.gateway.example.com/v1" },
+		];
+
+		// when
+		const result = await tool.execute(
+			"tool-call",
+			{ query: "discovered route" },
+			undefined,
+			undefined,
+			context({ provider: "openai", id: "gpt-3.5", baseUrl: "https://gateway.example.com/v1" }, availableModels),
+		);
+
+		// then
+		const details = result.details as SearchDetails;
+		expect(requestedUrls).toEqual(["https://anthropic.gateway.example.com/v1/messages"]);
+		expect(details.provider).toBe("anthropic");
+		expect(details.entryId).toBe("native-anthropic-claude-sonnet-4");
+		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual(["native-anthropic-claude-sonnet-4"]);
+	});
+
+	it("#given available models share provider #when discovering entries #then IDs stay unique", async () => {
+		// given
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", async (input: string | URL | Request): Promise<Response> => {
+			requestedUrls.push(String(input));
+			return jsonResponse({ results: [] });
+		});
+		const tool = withNativeExecutionContext(
+			createWebSearchTool(() => ({ ok: true, config: config(true), source: "test" })),
+		);
+		const availableModels: NativeModelInfo[] = [
+			{ provider: "openai", id: "gpt-4.1", baseUrl: "https://openai.gateway.example.com/v1" },
+			{ provider: "openai", id: "gpt-5.5", baseUrl: "https://openai.gateway.example.com/v1" },
+		];
+
+		// when
+		const result = await tool.execute(
+			"tool-call",
+			{ query: "duplicate provider ids" },
+			undefined,
+			undefined,
+			context({ provider: "custom", id: "not-search", baseUrl: "https://gateway.example.com/v1" }, availableModels),
+		);
+
+		// then
+		const details = result.details as SearchDetails;
+		expect(requestedUrls).toEqual([
+			"https://openai.gateway.example.com/v1/responses",
+			"https://openai.gateway.example.com/v1/responses",
+			"https://gateway.example.com/exa",
+		]);
+		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
+			"native-openai-gpt-4-1",
+			"native-openai-gpt-5-5",
+			"manual",
+		]);
 	});
 
 	it("#given auto enabled and unsupported active model #when executing #then does not prepend native provider", async () => {

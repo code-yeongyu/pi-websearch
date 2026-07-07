@@ -1,7 +1,7 @@
 import { defineTool } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 
-import { buildNativeEntry, type NativeModelInfo, type NativeModelRegistry } from "./native.js";
+import { buildNativeEntries, type NativeModelInfo, type NativeModelRegistry } from "./native.js";
 import { renderSearchCall, renderSearchResult } from "./renderers.js";
 import { createSearchRoutingState, formatSearchText, performSearch, type SearchRoutingState } from "./search.js";
 import type {
@@ -36,8 +36,8 @@ interface WebSearchToolContext {
 
 async function configWithNativeRoute(config: WebsearchConfig, ctx?: WebSearchToolContext): Promise<WebsearchConfig> {
 	if (!config.auto) return config;
-	const nativeEntry = await buildNativeEntry(ctx?.model, ctx?.modelRegistry);
-	return nativeEntry ? { ...config, providers: [nativeEntry, ...config.providers] } : config;
+	const nativeEntries = await buildNativeEntries(ctx?.model, ctx?.modelRegistry);
+	return nativeEntries.length > 0 ? { ...config, providers: [...nativeEntries, ...config.providers] } : config;
 }
 
 function providerLabel(provider: SearchProviderEntry): string {
