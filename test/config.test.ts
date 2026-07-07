@@ -232,7 +232,45 @@ describe("validateWebsearchConfig", () => {
 	});
 });
 
+it("#given provider entry with timeoutMs #when loading config #then preserves timeout", async () => {
+	// given
+	const root = await makeTempHome();
+	const projectPi = join(root, ".pi");
+	await mkdir(projectPi, { recursive: true });
+	await writeFile(
+		join(projectPi, "websearch.json"),
+		JSON.stringify({
+			providers: [{ id: "slow", provider: "exa", apiKey: "exa-test", timeoutMs: 15000 }],
+		}),
+		"utf8",
+	);
+
+	try {
+		// when
+		const result = await loadWebsearchConfig({ cwd: root, homeDir: root });
+
+		// then
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.config.providers[0]).toMatchObject({ id: "slow", timeoutMs: 15000 });
+		}
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});
+
 describe("validateProviderConfig", () => {
+	it("#given non-positive timeoutMs #when validating provider #then config is invalid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "exa", apiKey: "exa-test", timeoutMs: 0 });
+
+		// then
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.message).toContain("timeoutMs");
+		}
+	});
+
 	it("#given exa without api key #when validating #then provider is invalid", () => {
 		// given / when
 		const result = validateProviderConfig({ provider: "exa" });
