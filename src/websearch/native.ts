@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { isAllowedProviderBaseUrl } from "./provider-endpoints.js";
 import type { SearchProvider, SearchProviderEntry } from "./types.js";
 
@@ -77,20 +79,12 @@ function nativeRouteKey(model: NativeModelInfo): string | null {
 	if (!mapping) return null;
 	const baseUrl = buildEndpointUrl(model.baseUrl, mapping.resource);
 	if (!isAllowedProviderBaseUrl(baseUrl)) return null;
-	return `${mapping.provider}|${baseUrl}`;
+	return `${mapping.provider}|${new URL(baseUrl).href}`;
 }
 
-function stableIdPart(value: string): string {
-	return (
-		value
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "-")
-			.replace(/^-+|-+$/g, "") || "route"
-	);
-}
-
-function discoveredNativeEntryId(entry: SearchProviderEntry): string {
-	return `native-${entry.provider}-${stableIdPart(entry.baseUrl ?? "route")}`;
+function discoveredNativeEntryId(provider: SearchProvider, routeKey: string): string {
+	const routeFingerprint = createHash("sha256").update(routeKey).digest("hex").slice(0, 16);
+	return `native-${provider}-${routeFingerprint}`;
 }
 
 async function buildNativeEntryForModel(
@@ -141,7 +135,7 @@ export async function buildNativeEntries(
 		seenRoutes.add(routeKey);
 		const entry = await buildNativeEntryForModel(availableModel, modelRegistry, "native-discovered");
 		if (!entry) continue;
-		entries.push({ ...entry, id: discoveredNativeEntryId(entry) });
+		entries.push({ ...entry, id: discoveredNativeEntryId(entry.provider, routeKey) });
 	}
 
 	return entries;

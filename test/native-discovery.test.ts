@@ -127,8 +127,8 @@ describe("native discovery routing", () => {
 		expect(details.provider).toBe("exa");
 		expect(details.entryId).toBe("manual");
 		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
-			"native-anthropic-https-gateway-example-com-v1-messages",
-			"native-z-ai-https-gateway-example-com-v1-chat-completions",
+			"native-anthropic-b9f0e3d4ac1da541",
+			"native-z-ai-97ac6bcbbc83556b",
 			"manual",
 		]);
 	});
@@ -174,7 +174,7 @@ describe("native discovery routing", () => {
 		expect(details.entryId).toBe("manual");
 		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
 			"native",
-			"native-anthropic-https-gateway-example-com-v1-messages",
+			"native-anthropic-b9f0e3d4ac1da541",
 			"manual",
 		]);
 	});
@@ -198,5 +198,48 @@ describe("native discovery routing", () => {
 		// then
 		expect(entries).toEqual([]);
 		expect(authModels).toEqual(["claude-opus-4"]);
+	});
+
+	it("#given credential-like endpoint path material #when discovering a route #then emits an opaque stable id", async () => {
+		// given
+		const modelRegistry = registry([
+			{
+				provider: "openai",
+				id: "gpt-5.5",
+				baseUrl: "https://gateway.example.com/proxy/sk-live-1234/v1",
+			},
+		]);
+
+		// when
+		const entries = await buildNativeEntries(undefined, modelRegistry);
+
+		// then
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.id).toMatch(/^native-openai-[0-9a-f]{16}$/);
+		expect(entries[0]?.id).not.toContain("sk-live-1234");
+	});
+
+	it("#given equivalent endpoint spellings #when discovering aliases #then canonicalizes them to one route", async () => {
+		// given
+		const authModels: string[] = [];
+		const modelRegistry: DiscoveryRegistry = {
+			async getApiKeyAndHeaders(model) {
+				authModels.push(model.id);
+				return { ok: true, apiKey: "native-test" };
+			},
+			getAvailable() {
+				return [
+					{ provider: "openai", id: "gpt-5.5", baseUrl: "https://GATEWAY.example.com:443/v1" },
+					{ provider: "openai", id: "gpt-4.1", baseUrl: "https://gateway.example.com/v1" },
+				];
+			},
+		};
+
+		// when
+		const entries = await buildNativeEntries(undefined, modelRegistry);
+
+		// then
+		expect(entries).toHaveLength(1);
+		expect(authModels).toEqual(["gpt-5.5"]);
 	});
 });

@@ -311,10 +311,8 @@ describe("web_search tool definition", () => {
 		const details = result.details as SearchDetails;
 		expect(requestedUrls).toEqual(["https://anthropic.gateway.example.com/v1/messages"]);
 		expect(details.provider).toBe("anthropic");
-		expect(details.entryId).toBe("native-anthropic-https-anthropic-gateway-example-com-v1-messages");
-		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
-			"native-anthropic-https-anthropic-gateway-example-com-v1-messages",
-		]);
+		expect(details.entryId).toBe("native-anthropic-8bae5c53ca2e2eed");
+		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual(["native-anthropic-8bae5c53ca2e2eed"]);
 	});
 
 	it("#given available models share provider across distinct routes #when discovering entries #then route IDs stay unique", async () => {
@@ -349,8 +347,8 @@ describe("web_search tool definition", () => {
 			"https://gateway.example.com/exa",
 		]);
 		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
-			"native-openai-https-openai-a-gateway-example-com-v1-responses",
-			"native-openai-https-openai-b-gateway-example-com-v1-responses",
+			"native-openai-55398fe2d4e9bf84",
+			"native-openai-a41f926c003bdbda",
 			"manual",
 		]);
 	});
