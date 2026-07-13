@@ -67,11 +67,23 @@ function nativeMapping(model: NativeModelInfo): NativeProviderMapping | null {
 }
 
 function buildEndpointUrl(baseUrl: string, resource: string): string {
-	const trimmed = baseUrl.replace(/\/+$/, "");
+	let configured: URL;
+	try {
+		configured = new URL(baseUrl);
+	} catch {
+		return baseUrl;
+	}
+	const trimmedPath = configured.pathname.replace(/\/+$/, "");
 	const resourceSlash = `/${resource}`;
-	if (trimmed.endsWith(resourceSlash)) return trimmed;
-	if (/\/v\d+$/.test(trimmed)) return `${trimmed}${resourceSlash}`;
-	return `${trimmed}/v1${resourceSlash}`;
+	if (trimmedPath.endsWith(resourceSlash)) {
+		configured.pathname = trimmedPath;
+	} else if (/\/v\d+$/.test(trimmedPath)) {
+		configured.pathname = `${trimmedPath}${resourceSlash}`;
+	} else {
+		configured.pathname = `${trimmedPath}/v1${resourceSlash}`;
+	}
+	configured.hash = "";
+	return configured.href;
 }
 
 function nativeRouteKey(model: NativeModelInfo): string | null {
