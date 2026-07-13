@@ -20,7 +20,7 @@ Conventions for human contributors and AI agents working on this repository.
 
 ## Constraints
 
-- No Bun APIs. Runtime is Node 20+.
+- No Bun APIs. Runtime is Node 22.19+.
 - The extension is standalone and depends only on the public pi extension API.
 - Provider configuration is explicit: no config means the extension refuses to activate and surfaces a TUI startup error.
 - Exa, Tavily, Brave, Serper, Google CSE, Z.ai, OpenAI/Codex hosted search, Anthropic Messages search, Perplexity, and xAI require their documented credentials.
