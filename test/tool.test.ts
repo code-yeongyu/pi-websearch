@@ -311,11 +311,13 @@ describe("web_search tool definition", () => {
 		const details = result.details as SearchDetails;
 		expect(requestedUrls).toEqual(["https://anthropic.gateway.example.com/v1/messages"]);
 		expect(details.provider).toBe("anthropic");
-		expect(details.entryId).toBe("native-anthropic-claude-sonnet-4");
-		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual(["native-anthropic-claude-sonnet-4"]);
+		expect(details.entryId).toBe("native-anthropic-https-anthropic-gateway-example-com-v1-messages");
+		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
+			"native-anthropic-https-anthropic-gateway-example-com-v1-messages",
+		]);
 	});
 
-	it("#given available models share provider #when discovering entries #then IDs stay unique", async () => {
+	it("#given available models share provider across distinct routes #when discovering entries #then route IDs stay unique", async () => {
 		// given
 		const requestedUrls: string[] = [];
 		vi.stubGlobal("fetch", async (input: string | URL | Request): Promise<Response> => {
@@ -326,14 +328,14 @@ describe("web_search tool definition", () => {
 			createWebSearchTool(() => ({ ok: true, config: config(true), source: "test" })),
 		);
 		const availableModels: NativeModelInfo[] = [
-			{ provider: "openai", id: "gpt-4.1", baseUrl: "https://openai.gateway.example.com/v1" },
-			{ provider: "openai", id: "gpt-5.5", baseUrl: "https://openai.gateway.example.com/v1" },
+			{ provider: "openai", id: "gpt-4.1", baseUrl: "https://openai-a.gateway.example.com/v1" },
+			{ provider: "openai", id: "gpt-5.5", baseUrl: "https://openai-b.gateway.example.com/v1" },
 		];
 
 		// when
 		const result = await tool.execute(
 			"tool-call",
-			{ query: "duplicate provider ids" },
+			{ query: "distinct route ids" },
 			undefined,
 			undefined,
 			context({ provider: "custom", id: "not-search", baseUrl: "https://gateway.example.com/v1" }, availableModels),
@@ -342,13 +344,13 @@ describe("web_search tool definition", () => {
 		// then
 		const details = result.details as SearchDetails;
 		expect(requestedUrls).toEqual([
-			"https://openai.gateway.example.com/v1/responses",
-			"https://openai.gateway.example.com/v1/responses",
+			"https://openai-a.gateway.example.com/v1/responses",
+			"https://openai-b.gateway.example.com/v1/responses",
 			"https://gateway.example.com/exa",
 		]);
 		expect(details.attempts?.map((attempt) => attempt.entryId)).toEqual([
-			"native-openai-gpt-4-1",
-			"native-openai-gpt-5-5",
+			"native-openai-https-openai-a-gateway-example-com-v1-responses",
+			"native-openai-https-openai-b-gateway-example-com-v1-responses",
 			"manual",
 		]);
 	});

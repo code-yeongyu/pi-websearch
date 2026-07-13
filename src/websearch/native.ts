@@ -72,7 +72,28 @@ function buildEndpointUrl(baseUrl: string, resource: string): string {
 	return `${trimmed}/v1${resourceSlash}`;
 }
 
-export async function buildNativeEntry(
+function nativeRouteKey(model: NativeModelInfo): string | null {
+	const mapping = nativeMapping(model);
+	if (!mapping) return null;
+	const baseUrl = buildEndpointUrl(model.baseUrl, mapping.resource);
+	if (!isAllowedProviderBaseUrl(baseUrl)) return null;
+	return `${mapping.provider}|${baseUrl}`;
+}
+
+function stableIdPart(value: string): string {
+	return (
+		value
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "") || "route"
+	);
+}
+
+function discoveredNativeEntryId(entry: SearchProviderEntry): string {
+	return `native-${entry.provider}-${stableIdPart(entry.baseUrl ?? "route")}`;
+}
+
+async function buildNativeEntryForModel(
 	model: NativeModelInfo | undefined,
 	modelRegistry: NativeModelRegistry | undefined,
 	id = "native",
@@ -96,24 +117,6 @@ export async function buildNativeEntry(
 		priority: -1,
 	};
 }
-
-function nativeEntryKey(entry: SearchProviderEntry): string {
-	return `${entry.provider}:${entry.baseUrl ?? ""}:${entry.model ?? ""}`;
-}
-
-function stableIdPart(value: string): string {
-	return (
-		value
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "-")
-			.replace(/^-+|-+$/g, "") || "model"
-	);
-}
-
-function discoveredNativeEntryId(entry: SearchProviderEntry): string {
-	return `native-${entry.provider}-${stableIdPart(entry.model ?? "model")}`;
-}
-
 export async function buildNativeEntries(
 	model: NativeModelInfo | undefined,
 	modelRegistry: NativeModelRegistry | undefined,
@@ -121,18 +124,32 @@ export async function buildNativeEntries(
 	if (!modelRegistry) return [];
 
 	const entries: SearchProviderEntry[] = [];
-	const activeEntry = await buildNativeEntry(model, modelRegistry);
-	if (activeEntry) entries.push(activeEntry);
+	const seenRoutes = new Set<string>();
 
-	const seen = new Set(entries.map(nativeEntryKey));
-	const availableModels = modelRegistry.getAvailable?.() ?? [];
-	for (const availableModel of availableModels) {
-		const entry = await buildNativeEntry(availableModel, modelRegistry, "native-discovered");
+	const activeRouteKey = model ? nativeRouteKey(model) : null;
+	if (activeRouteKey) {
+		seenRoutes.add(activeRouteKey);
+		const activeEntry = await buildNativeEntryForModel(model, modelRegistry);
+		if (activeEntry) entries.push(activeEntry);
+	}
+
+	if (!modelRegistry.getAvailable) return entries;
+
+	for (const availableModel of modelRegistry.getAvailable()) {
+		const routeKey = nativeRouteKey(availableModel);
+		if (!routeKey || seenRoutes.has(routeKey)) continue;
+		seenRoutes.add(routeKey);
+		const entry = await buildNativeEntryForModel(availableModel, modelRegistry, "native-discovered");
 		if (!entry) continue;
-		const key = nativeEntryKey(entry);
-		if (seen.has(key)) continue;
-		seen.add(key);
 		entries.push({ ...entry, id: discoveredNativeEntryId(entry) });
 	}
+
 	return entries;
+}
+
+export async function buildNativeEntry(
+	model: NativeModelInfo | undefined,
+	modelRegistry: NativeModelRegistry | undefined,
+): Promise<SearchProviderEntry | null> {
+	return buildNativeEntryForModel(model, modelRegistry);
 }
