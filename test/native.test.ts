@@ -189,6 +189,13 @@ describe("buildNativeEntry", () => {
 		const unsafeBaseUrls = [
 			"http://127.0.0.1/v1",
 			"https://localhost/v1",
+			"https://localhost./v1",
+			"https://sub.localhost./v1",
+			"https://127.1../v1",
+			"https://0177.0.0.1../v1",
+			"https://2130706433../v1",
+			"https://0x7f000001../v1",
+			"https://10.1../v1",
 			"https://user:pass@gateway.example.com/v1",
 			"https://[::1]/v1",
 			"https://[fd00::1]/v1",
