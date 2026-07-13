@@ -166,6 +166,17 @@ describe("buildNativeEntry", () => {
 		expect(anthropicEntry?.baseUrl).toBe("https://gateway.example.com/v1/messages");
 	});
 
+	it("#given a caller-supplied entry id #when building entry #then preserves the public id override", async () => {
+		// given
+		const customId = "native-custom";
+
+		// when
+		const entry = await buildNativeEntry(model("openai", "gpt-5.5"), registry(), customId);
+
+		// then
+		expect(entry?.id).toBe(customId);
+	});
+
 	it("#given unsafe base url #when building entry #then returns null before resolving auth", async () => {
 		// given
 		let authCalls = 0;

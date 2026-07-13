@@ -150,6 +150,7 @@ export async function buildNativeEntries(
 export async function buildNativeEntry(
 	model: NativeModelInfo | undefined,
 	modelRegistry: NativeModelRegistry | undefined,
+	id = "native",
 ): Promise<SearchProviderEntry | null> {
-	return buildNativeEntryForModel(model, modelRegistry);
+	return buildNativeEntryForModel(model, modelRegistry, id);
 }
