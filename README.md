@@ -93,6 +93,7 @@ Supported providers:
 - `duckduckgo-html`: DuckDuckGo HTML search endpoint. Requires no `apiKey`; used as the zero-config default.
 - `exa`: direct Exa search. Requires `apiKey`.
 - `tavily`: direct Tavily search. Requires `apiKey`.
+- `serpdive`: direct SERPdive search; results carry extracted, answer-ready page content. Requires `apiKey`.
 - `brave`: Brave Search API. Requires `apiKey`.
 - `serper`: Serper Google search API. Requires `apiKey`.
 - `google-cse`: Google Custom Search JSON API. Requires `apiKey` and `searchEngineId`.

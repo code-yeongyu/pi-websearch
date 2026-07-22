@@ -21,6 +21,7 @@ import type {
 const PROVIDERS: readonly SearchProvider[] = [
 	"exa",
 	"tavily",
+	"serpdive",
 	"brave",
 	"duckduckgo-html",
 	"serper",

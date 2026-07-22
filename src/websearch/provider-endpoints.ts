@@ -3,6 +3,7 @@ import type { SearchProvider, SearchProviderConfig } from "./types.js";
 const DEFAULT_PROVIDER_URLS: Record<SearchProvider, string> = {
 	exa: "https://api.exa.ai/search",
 	tavily: "https://api.tavily.com/search",
+	serpdive: "https://api.serpdive.com/v1/search",
 	brave: "https://api.search.brave.com/res/v1/web/search",
 	"duckduckgo-html": "https://html.duckduckgo.com/html/",
 	serper: "https://google.serper.dev/search",

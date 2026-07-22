@@ -15,6 +15,7 @@ describe("buildSearchRequest", () => {
 		const providers: SearchProvider[] = [
 			"exa",
 			"tavily",
+			"serpdive",
 			"brave",
 			"serper",
 			"google-cse",
@@ -66,6 +67,24 @@ describe("buildSearchRequest", () => {
 		expect(request.url).toBe("https://api.tavily.com/search");
 		expect(request.init.headers).toHaveProperty("Authorization", "Bearer tvly-test");
 		expect(request.body).toEqual({ query: "current docs", max_results: 5 });
+	});
+
+	it("#given serpdive config #when building request #then sends bearer token and folds domain filters into the query", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "serpdive", apiKey: "sd-test" };
+
+		// when
+		const request = buildSearchRequest(config, {
+			query: "current docs",
+			maxResults: 20,
+			allowedDomains: ["docs.example.com"],
+			blockedDomains: ["reddit.com"],
+		});
+
+		// then
+		expect(request.url).toBe("https://api.serpdive.com/v1/search");
+		expect(request.init.headers).toHaveProperty("Authorization", "Bearer sd-test");
+		expect(request.body).toEqual({ query: "current docs site:docs.example.com", max_results: 10 });
 	});
 
 	it("#given allowed domain filter #when building brave request #then maps filter into provider query", () => {
@@ -406,6 +425,22 @@ describe("normalizeSearchResponse", () => {
 
 		// then
 		expect(results).toEqual([{ title: "Docs", url: "https://docs.example.com", snippet: "Useful docs", score: 0.9 }]);
+	});
+
+	it("#given serpdive response #when normalizing #then returns common results", () => {
+		// given
+		const payload = {
+			results: [
+				{ title: "Docs", url: "https://docs.example.com", content: "Extracted page content", date: "2026-06-19" },
+			],
+			response_time_ms: 1400,
+		};
+
+		// when
+		const results = normalizeSearchResponse("serpdive", payload);
+
+		// then
+		expect(results).toEqual([{ title: "Docs", url: "https://docs.example.com", snippet: "Extracted page content" }]);
 	});
 
 	it("#given serper response #when normalizing #then uses organic links", () => {
