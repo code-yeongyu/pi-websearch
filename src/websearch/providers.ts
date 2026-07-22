@@ -6,6 +6,7 @@ import { googleCseProvider } from "./providers/google-cse.js";
 import { kimiProvider } from "./providers/kimi.js";
 import { openAiResponsesProvider } from "./providers/openai-responses.js";
 import { perplexityProvider } from "./providers/perplexity.js";
+import { serpdiveProvider } from "./providers/serpdive.js";
 import { serperProvider } from "./providers/serper.js";
 import type { ProviderModule } from "./providers/shared.js";
 import { parseObjectPayload, resolveDomainFilters } from "./providers/shared.js";
@@ -23,6 +24,7 @@ import type {
 const PROVIDER_MODULES: Record<SearchProvider, ProviderModule> = {
 	exa: exaProvider,
 	tavily: tavilyProvider,
+	serpdive: serpdiveProvider,
 	brave: braveProvider,
 	"duckduckgo-html": duckDuckGoHtmlProvider,
 	serper: serperProvider,
