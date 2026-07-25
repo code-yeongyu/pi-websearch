@@ -95,6 +95,9 @@ export interface SearchProgressDetails {
 	query: string;
 	providerLabels: string[];
 	maxResults: number;
+	currentProvider?: string;
+	attempts?: SearchAttempt[];
+	routeLabels?: string[];
 	strategy?: RoutingStrategy;
 	allowedDomains?: string[];
 	blockedDomains?: string[];

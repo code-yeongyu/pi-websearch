@@ -3,12 +3,17 @@ import { Type } from "typebox";
 
 import { buildNativeEntries, type NativeModelInfo, type NativeModelRegistry } from "./native.js";
 import { renderSearchCall, renderSearchResult } from "./renderers.js";
-import { createSearchRoutingState, formatSearchText, performSearch, type SearchRoutingState } from "./search.js";
+import {
+	createSearchRoutingState,
+	formatSearchText,
+	performSearch,
+	providerEntryLabel,
+	type SearchRoutingState,
+} from "./search.js";
 import type {
 	ConfigLoadResult,
 	SearchErrorDetails,
 	SearchProgressDetails,
-	SearchProviderEntry,
 	SearchRenderDetails,
 	WebsearchConfig,
 } from "./types.js";
@@ -40,11 +45,10 @@ async function configWithNativeRoute(config: WebsearchConfig, ctx?: WebSearchToo
 	return nativeEntries.length > 0 ? { ...config, providers: [...nativeEntries, ...config.providers] } : config;
 }
 
-function providerLabel(provider: SearchProviderEntry): string {
-	return provider.id ? `${provider.id}/${provider.provider}` : provider.provider;
-}
-
 function formatSearchProgressText(details: SearchProgressDetails): string {
+	if (details.currentProvider) {
+		return `Searching "${details.query}" via ${details.currentProvider} (max ${details.maxResults})`;
+	}
 	const route = details.providerLabels.length > 0 ? details.providerLabels.join(" -> ") : "configured providers";
 	return `Searching "${details.query}" via ${route} (max ${details.maxResults})`;
 }
@@ -82,7 +86,7 @@ export function createWebSearchTool(getConfig: ConfigProvider): WebSearchTool {
 			const progressDetails: SearchProgressDetails = {
 				phase: "searching",
 				query: params.query,
-				providerLabels: config.providers.map(providerLabel),
+				providerLabels: config.providers.map(providerEntryLabel),
 				maxResults,
 				strategy: config.strategy,
 				...(params.allowed_domains ? { allowedDomains: params.allowed_domains } : {}),
@@ -108,7 +112,24 @@ export function createWebSearchTool(getConfig: ConfigProvider): WebSearchTool {
 				...(params.allowed_domains === undefined ? {} : { allowedDomains: params.allowed_domains }),
 				...(params.blocked_domains === undefined ? {} : { blockedDomains: params.blocked_domains }),
 			};
-			const details = await performSearch(config, request, signal, routingState);
+			const details = await performSearch(
+				config,
+				request,
+				signal,
+				routingState,
+				(providerLabel, attempts, routeLabels) => {
+					const attemptProgress: SearchProgressDetails = {
+						...progressDetails,
+						currentProvider: providerLabel,
+						attempts: [...attempts],
+						routeLabels: [...routeLabels],
+					};
+					onUpdate?.({
+						content: [{ type: "text", text: formatSearchProgressText(attemptProgress) }],
+						details: attemptProgress,
+					});
+				},
+			);
 			return { content: [{ type: "text", text: formatSearchText(details) }], details };
 		},
 		renderCall: (args, theme) => renderSearchCall(args, theme),

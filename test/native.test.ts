@@ -213,3 +213,64 @@ describe("buildNativeEntry", () => {
 		expect(authCalls).toBe(0);
 	});
 });
+
+describe("nativeMapping matrix", () => {
+	const matrix: Array<{
+		provider: string;
+		id: string;
+		mapped: { provider: SearchProvider; resource: string } | null;
+	}> = [
+		{ provider: "openai", id: "gpt-5.6-sol", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5.6-terra", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5.5", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5.5-fast", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5.4", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5-pro", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-4.1-mini", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-4o-mini-2026-01-01", mapped: { provider: "openai", resource: "responses" } },
+		{ provider: "openai", id: "gpt-5.3-codex", mapped: null },
+		{ provider: "openai", id: "gpt-5.3-codex-spark", mapped: null },
+		{ provider: "openai", id: "gpt-4-turbo", mapped: null },
+		{ provider: "openai", id: "o3", mapped: null },
+		{ provider: "anthropic", id: "claude-opus-5", mapped: { provider: "anthropic", resource: "messages" } },
+		{ provider: "anthropic", id: "claude-sonnet-5", mapped: { provider: "anthropic", resource: "messages" } },
+		{ provider: "anthropic", id: "claude-fable-5", mapped: { provider: "anthropic", resource: "messages" } },
+		{ provider: "anthropic", id: "claude-haiku-4-5", mapped: { provider: "anthropic", resource: "messages" } },
+		{ provider: "anthropic", id: "claude-opus-4-8", mapped: { provider: "anthropic", resource: "messages" } },
+		{
+			provider: "anthropic",
+			id: "claude-sonnet-4-5-20250929",
+			mapped: { provider: "anthropic", resource: "messages" },
+		},
+		{ provider: "anthropic", id: "not-a-claude-model", mapped: null },
+		{ provider: "xai", id: "grok-4.3", mapped: { provider: "xai", resource: "responses" } },
+		{
+			provider: "openrouter",
+			id: "anthropic/claude-opus-5",
+			mapped: { provider: "anthropic", resource: "messages" },
+		},
+	];
+
+	for (const { provider, id, mapped } of matrix) {
+		const expected = mapped ? `${mapped.provider}/${mapped.resource}` : "null";
+		it(`#given ${provider}/${id} #when mapping native route #then resolves to ${expected}`, async () => {
+			// when
+			const entry = await buildNativeEntry(model(provider, id), registry());
+
+			// then
+			if (mapped === null) {
+				expect(entry).toBeNull();
+			} else {
+				expect(entry).toEqual({
+					id: "native",
+					provider: mapped.provider,
+					apiKey: "native-test",
+					baseUrl: `https://gateway.example.com/v1/${mapped.resource}`,
+					model: id,
+					priority: -1,
+				});
+			}
+		});
+	}
+});

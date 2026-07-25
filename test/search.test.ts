@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createSearchRoutingState, formatSearchText, performSearch } from "../src/websearch/search.js";
-import type { WebsearchConfig } from "../src/websearch/types.js";
+import type { SearchDetails, WebsearchConfig } from "../src/websearch/types.js";
 
 function jsonResponse(payload: object, status = 200): Response {
 	return new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } });
@@ -415,5 +415,77 @@ describe("performSearch", () => {
 		expect(details.error).toContain("openai/openai-search");
 		expect(details.error).toContain("HTTP 530");
 		expect(details.error).toContain("origin unreachable");
+	});
+
+	it("#given priority reordered providers #when performSearch fires onAttempt #then routeLabels follow resolved order not config order", async () => {
+		// given
+		const listenerCalls: Array<{ label: string; attempts: number; routeLabels: string[] }> = [];
+		vi.stubGlobal("fetch", async (input: string | URL | Request): Promise<Response> => {
+			const url = String(input);
+			if (url.includes("high")) return jsonResponse({ error: "down" }, 503);
+			return jsonResponse({
+				results: [{ title: "Fallback", url: "https://fallback.example.com", text: "fallback result" }],
+			});
+		});
+		const reorderedConfig: WebsearchConfig = {
+			strategy: "priority",
+			fallback: true,
+			auto: true,
+			providers: [
+				{ id: "low", provider: "exa", baseUrl: "https://gateway.example.com/low", priority: 5 },
+				{ id: "high", provider: "exa", baseUrl: "https://gateway.example.com/high", priority: 0 },
+			],
+		};
+
+		// when
+		await performSearch(
+			reorderedConfig,
+			{ query: "resolved order", maxResults: 1 },
+			undefined,
+			undefined,
+			(providerLabel, attempts, routeLabels) => {
+				listenerCalls.push({
+					label: providerLabel,
+					attempts: attempts.length,
+					routeLabels: [...routeLabels],
+				});
+			},
+		);
+
+		// then
+		// config order is [low, high] but priority resolves to [high, low]
+		expect(listenerCalls).toHaveLength(2);
+		expect(listenerCalls[0]?.label).toBe("exa/high");
+		expect(listenerCalls[0]?.attempts).toBe(0);
+		expect(listenerCalls[0]?.routeLabels).toEqual(["exa/high", "exa/low"]);
+		expect(listenerCalls[1]?.label).toBe("exa/low");
+		expect(listenerCalls[1]?.attempts).toBe(1);
+		expect(listenerCalls[1]?.routeLabels).toEqual(["exa/high", "exa/low"]);
+		// routeLabels[i] aligns with the i-th attempted provider
+		expect(listenerCalls[0]?.routeLabels?.[0]).toBe(listenerCalls[0]?.label);
+		expect(listenerCalls[1]?.routeLabels?.[1]).toBe(listenerCalls[1]?.label);
+	});
+});
+
+describe("formatSearchText native entry label collapse", () => {
+	it("#given finished details with native-openai entryId and priority strategy #when formatting text #then route fragment collapses to openai/native", () => {
+		// given
+		const details: SearchDetails = {
+			provider: "openai",
+			entryId: "native-openai-abc123",
+			query: "native label",
+			results: [{ title: "Native", url: "https://example.com/native", snippet: "snip" }],
+			durationMs: 7,
+			truncated: false,
+			strategy: "priority",
+			attempts: [{ provider: "openai", entryId: "native-openai-abc123", durationMs: 7, resultsCount: 1 }],
+		};
+
+		// when
+		const text = formatSearchText(details);
+
+		// then
+		expect(text).toContain("via openai/native (priority)");
+		expect(text).not.toContain("native-openai-abc123");
 	});
 });

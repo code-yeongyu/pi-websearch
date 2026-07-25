@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 import { loadWebsearchConfig } from "./websearch/config.js";
+import { providerEntryLabel } from "./websearch/search.js";
 import { createWebSearchTool } from "./websearch/tool.js";
 import type { ConfigLoadResult, WebsearchConfig } from "./websearch/types.js";
 
@@ -24,12 +25,8 @@ export default function (pi: ExtensionAPI): void {
 		message: "Missing websearch config. Create .pi/websearch.json or ~/.pi/websearch.json before starting pi.",
 	};
 
-	function providerLabel(provider: WebsearchConfig["providers"][number]): string {
-		return provider.id ? `${provider.id}/${provider.provider}` : provider.provider;
-	}
-
 	function providerList(config: WebsearchConfig): string {
-		return config.providers.map(providerLabel).join(", ");
+		return config.providers.map(providerEntryLabel).join(", ");
 	}
 
 	function clearUi(ctx: ExtensionContext): void {

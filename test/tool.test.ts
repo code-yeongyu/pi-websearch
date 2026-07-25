@@ -4,6 +4,7 @@ import { createWebSearchTool, web_search } from "../src/websearch/tool.js";
 import type {
 	SearchDetails,
 	SearchErrorDetails,
+	SearchProgressDetails,
 	SearchProviderEntry,
 	WebsearchConfig,
 } from "../src/websearch/types.js";
@@ -207,14 +208,67 @@ describe("web_search tool definition", () => {
 		const details = result.details as SearchDetails;
 		expect(details.provider).toBe("exa");
 		expect(updates[0]).toMatchObject({
-			content: [{ type: "text", text: 'Searching "route progress" via manual/exa (max 4)' }],
+			content: [{ type: "text", text: 'Searching "route progress" via exa/manual (max 4)' }],
 			details: {
 				phase: "searching",
 				query: "route progress",
-				providerLabels: ["manual/exa"],
+				providerLabels: ["exa/manual"],
 				maxResults: 4,
 			},
 		});
+		const progressUpdate = updates.find((u) => (u.details as SearchProgressDetails | undefined)?.currentProvider);
+		expect(progressUpdate?.details).toMatchObject({ currentProvider: "exa/manual" });
+		for (const update of updates) {
+			for (const entry of update.content) {
+				expect(entry.text ?? "").not.toMatch(/\[\d+\/\d+\]/);
+			}
+		}
+	});
+
+	it("#given discovered native entry id #when emitting progress #then renders as provider/native with no step counter", async () => {
+		// given
+		const updates: Array<{ content: Array<{ type: string; text?: string }>; details?: unknown }> = [];
+		vi.stubGlobal("fetch", async (): Promise<Response> => {
+			return jsonResponse({
+				output: [{ type: "web_search_call", action: { sources: [{ url: "https://native.example.com" }] } }],
+			});
+		});
+		const nativeProvider: SearchProviderEntry = {
+			id: "native-openai-abc123",
+			provider: "openai",
+			apiKey: "openai-test",
+			baseUrl: "https://gateway.example.com/v1/responses",
+			model: "gpt-5.5",
+		};
+		const nativeConfig: WebsearchConfig = {
+			strategy: "priority",
+			fallback: true,
+			auto: false,
+			providers: [nativeProvider],
+		};
+		const tool = withNativeExecutionContext(
+			createWebSearchTool(() => ({ ok: true, config: nativeConfig, source: "test" })),
+		);
+
+		// when
+		await tool.execute(
+			"tool-call",
+			{ query: "native label" },
+			undefined,
+			(update) => updates.push(update),
+			context({ provider: "openai", id: "gpt-5.5", baseUrl: "https://gateway.example.com/v1" }),
+		);
+
+		// then
+		const first = updates[0]?.details as SearchProgressDetails | undefined;
+		expect(first?.providerLabels).toEqual(["openai/native"]);
+		const progress = updates.find((u) => (u.details as SearchProgressDetails | undefined)?.currentProvider);
+		expect(progress?.details).toMatchObject({ currentProvider: "openai/native" });
+		for (const update of updates) {
+			for (const entry of update.content) {
+				expect(entry.text ?? "").not.toMatch(/\[\d+\/\d+\]/);
+			}
+		}
 	});
 
 	it("#given invalid domain filters #when executing #then returns error details without spoofing a provider", async () => {

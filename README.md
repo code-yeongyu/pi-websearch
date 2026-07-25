@@ -73,12 +73,15 @@ When `auto` is `true` (the default) and the active pi model exposes a server-hos
 
 Models that activate native routing (Q1 2026):
 
-- `openai`: `gpt-5.5`, `gpt-5.5-fast`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4o`, `gpt-4o-mini` (excludes `gpt-4.1-nano`, `gpt-5-codex`, `gpt-5.1-codex`).
-- `anthropic`: `claude-opus-4-*`, `claude-sonnet-4-*`.
+- `openai`: any id matching `/^gpt-(4o|4\.1|5)/` that does not contain `codex` — e.g. `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5-pro`, `gpt-4.1-mini`, `gpt-4o-mini`; excludes `gpt-5.3-codex` / `gpt-5.3-codex-spark` and non-matching ids such as `gpt-4-turbo` or the o-series.
+- `anthropic`: any `claude-*` id (opus/sonnet/haiku/fable, dated or undated).
 - `xai`: any `grok-*`.
 - `perplexity`: any `sonar*` (search is intrinsic to Sonar models).
 - `z-ai` or `zai`: any `glm-*`.
+- `kimi-coding`: the `kimi-coding` provider (routes to the Kimi search endpoint).
 - `openrouter`: any `<provider>/<model>` whose `<provider>` and `<model>` match one of the rows above (for example `openai/gpt-5.5` or `anthropic/claude-opus-4-7`).
+
+A model that matches but whose endpoint rejects the server-side search tool simply fails that attempt and the configured providers take over (default `fallback: true`).
 
 The native entry inherits `model.baseUrl` from `ExtensionContext.model`, so any local gateway override registered in the pi model registry is honored. The endpoint path is appended automatically: if `baseUrl` already ends with `/v1`, only the resource segment is added; otherwise `/v1/<resource>` is appended.
 
@@ -87,6 +90,23 @@ Routing strategies:
 - `priority`: try lower `priority` values first, falling back in order when `fallback` is `true`.
 - `round-robin`: rotate the first provider per search; optional `weight` repeats entries in the rotation.
 - `fill-first`: collect unique results across providers until the requested result count is filled.
+
+### Progress rendering
+
+While a search is in flight, the TUI shows a single collapsed line for the provider currently being tried — no step counter, just the active source:
+
+```
+Searching "q" via duckduckgo-html/backup (max 10)
+```
+
+When expanded, a three-state route line is appended so you can see which sources already ran, which one is running, and which are still pending. Each entry is `provider/id` followed by its state: `failed`, the result count, `searching` (the entry at the current attempt index), or `pending`:
+
+```
+Searching "q" via duckduckgo-html/backup (max 10)
+route exa/primary:failed -> duckduckgo-html/backup:searching -> brave/extra:pending
+```
+
+Discovered provider-native entries collapse to `provider/native` (an entry whose id is `native-openai-<fingerprint>` renders as `openai/native`). The finished render keeps the same `provider/id` spelling, e.g. `5 results via duckduckgo-html/backup (priority) in 320ms`, plus a `route ...` line of completed attempt states when expanded.
 
 Supported providers:
 

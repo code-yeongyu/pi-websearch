@@ -126,3 +126,58 @@ describe("websearch extension UI", () => {
 		expect(notify).toHaveBeenCalledWith(missingConfig.message, "error");
 	});
 });
+
+describe("websearch /websearch status provider labels", () => {
+	beforeEach(() => {
+		loadWebsearchConfig.mockReset();
+	});
+
+	it("#given active multi-provider config #when /websearch status runs #then providers render as provider/id and collapse discovered native ids", async () => {
+		// given
+		loadWebsearchConfig.mockResolvedValue({
+			ok: true,
+			source: "test",
+			config: {
+				strategy: "priority",
+				fallback: true,
+				auto: true,
+				providers: [
+					{ id: "primary", provider: "exa", apiKey: "test-key" },
+					{ id: "backup", provider: "duckduckgo-html" },
+					{ id: "native-openai-abc123", provider: "openai", apiKey: "test-key" },
+				],
+			},
+		});
+		let sessionStart: SessionHandler | undefined;
+		type CommandHandler = (rawArgs: string, ctx: { ui: { notify: ReturnType<typeof vi.fn> } }) => Promise<void>;
+		let statusCommand: CommandHandler | undefined;
+		websearchExtension({
+			registerTool: vi.fn(),
+			registerCommand(_name: string, definition: { handler: CommandHandler }) {
+				statusCommand = definition.handler;
+			},
+			on(eventName: string, handler: unknown) {
+				if (eventName === "session_start") sessionStart = handler as SessionHandler;
+			},
+		} as never);
+		await sessionStart?.(
+			{},
+			{
+				cwd: "/tmp/labels",
+				model: { provider: "local", api: "openai-completions" },
+				ui: { setStatus: vi.fn(), setWidget: vi.fn(), notify: vi.fn(), theme: createTheme() },
+			},
+		);
+		const notify = vi.fn();
+
+		// when
+		await statusCommand?.("status", { ui: { notify } });
+
+		// then
+		expect(notify).toHaveBeenCalledTimes(1);
+		const call = notify.mock.calls[0];
+		expect(call?.[1]).toBe("info");
+		expect(call?.[0]).toContain("providers=exa/primary, duckduckgo-html/backup, openai/native");
+		expect(call?.[0]).not.toContain("primary/exa");
+	});
+});

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { renderSearchCall, renderSearchResult } from "../src/websearch/renderers.js";
-import type { SearchDetails } from "../src/websearch/types.js";
+import type { SearchDetails, SearchProgressDetails } from "../src/websearch/types.js";
 
 const theme = {
 	bold: (value: string) => value,
@@ -111,5 +111,110 @@ describe("renderSearchResult", () => {
 		// then
 		const rendered = component.render(120).join("\n");
 		expect(rendered).toContain("Invalid provider config");
+	});
+
+	it("#given partial progress with routeLabels #when rendering collapsed #then shows only current provider with no step counter", () => {
+		// given
+		const details: SearchProgressDetails = {
+			phase: "searching",
+			query: "route states",
+			providerLabels: ["exa/primary", "duckduckgo-html/backup", "brave/extra"],
+			routeLabels: ["exa/primary", "duckduckgo-html/backup", "brave/extra"],
+			currentProvider: "duckduckgo-html/backup",
+			attempts: [{ provider: "exa", entryId: "primary", durationMs: 100, resultsCount: 0, error: "boom" }],
+			maxResults: 10,
+		};
+
+		// when
+		const collapsed = renderSearchResult(
+			{ content: [{ type: "text", text: "" }], details },
+			{ isPartial: true },
+			theme,
+		)
+			.render(120)
+			.join("\n");
+
+		// then
+		expect(collapsed.trim()).toBe('Searching "route states" via duckduckgo-html/backup (max 10)');
+		expect(collapsed).not.toMatch(/\[\d+\/\d+\]/);
+	});
+
+	it("#given partial progress with routeLabels #when rendering expanded #then adds the three-state route line", () => {
+		// given
+		const details: SearchProgressDetails = {
+			phase: "searching",
+			query: "route states",
+			providerLabels: ["exa/primary", "duckduckgo-html/backup", "brave/extra"],
+			routeLabels: ["exa/primary", "duckduckgo-html/backup", "brave/extra"],
+			currentProvider: "duckduckgo-html/backup",
+			attempts: [{ provider: "exa", entryId: "primary", durationMs: 100, resultsCount: 0, error: "boom" }],
+			maxResults: 10,
+		};
+
+		// when
+		const expanded = renderSearchResult(
+			{ content: [{ type: "text", text: "" }], details },
+			{ isPartial: true, expanded: true },
+			theme,
+		)
+			.render(120)
+			.join("\n");
+
+		// then
+		expect(expanded).toContain('Searching "route states" via duckduckgo-html/backup (max 10)');
+		expect(expanded).toContain("route exa/primary:failed -> duckduckgo-html/backup:searching -> brave/extra:pending");
+		expect(expanded).not.toMatch(/\[\d+\/\d+\]/);
+	});
+});
+
+describe("renderSearchResult native entry label collapse", () => {
+	it("#given finished details with native-openai entryId #when rendering collapsed summary #then collapses to openai/native", () => {
+		// given
+		const details: SearchDetails = {
+			provider: "openai",
+			entryId: "native-openai-abc123",
+			query: "native label",
+			results: [{ title: "Native", url: "https://example.com/native", snippet: "snip" }],
+			durationMs: 7,
+			truncated: false,
+			strategy: "priority",
+			attempts: [{ provider: "openai", entryId: "native-openai-abc123", durationMs: 7, resultsCount: 1 }],
+		};
+
+		// when
+		const rendered = renderSearchResult({ content: [{ type: "text", text: "ok" }], details }, {}, theme)
+			.render(120)
+			.join("\n");
+
+		// then
+		expect(rendered).toContain("via openai/native");
+		expect(rendered).not.toContain("native-openai-abc123");
+	});
+
+	it("#given finished details with native-openai entryId #when rendering expanded route #then collapses route line to openai/native:count", () => {
+		// given
+		const details: SearchDetails = {
+			provider: "openai",
+			entryId: "native-openai-abc123",
+			query: "native label",
+			results: [{ title: "Native", url: "https://example.com/native", snippet: "snip" }],
+			durationMs: 7,
+			truncated: false,
+			strategy: "priority",
+			attempts: [{ provider: "openai", entryId: "native-openai-abc123", durationMs: 7, resultsCount: 1 }],
+		};
+
+		// when
+		const rendered = renderSearchResult(
+			{ content: [{ type: "text", text: "ok" }], details },
+			{ expanded: true },
+			theme,
+		)
+			.render(120)
+			.join("\n");
+
+		// then
+		expect(rendered).toContain("route openai/native:1");
+		expect(rendered).not.toContain("native-openai-abc123");
 	});
 });
