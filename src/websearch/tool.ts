@@ -1,4 +1,4 @@
-import { defineTool } from "@earendil-works/pi-coding-agent";
+import { defineTool, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
 import { buildNativeEntries, type NativeModelInfo, type NativeModelRegistry } from "./native.js";
@@ -34,14 +34,32 @@ const Params = Type.Object(
 export type ConfigProvider = () => ConfigLoadResult;
 type WebSearchTool = ReturnType<typeof defineTool<typeof Params, SearchRenderDetails>>;
 
-interface WebSearchToolContext {
-	model: NativeModelInfo | undefined;
-	modelRegistry: NativeModelRegistry;
+function nativeModelFromContext(model: ExtensionContext["model"]): NativeModelInfo | undefined {
+	if (!model) return undefined;
+	return { provider: model.provider, id: model.id, baseUrl: model.baseUrl };
 }
 
-async function configWithNativeRoute(config: WebsearchConfig, ctx?: WebSearchToolContext): Promise<WebsearchConfig> {
+function nativeRegistryFromContext(modelRegistry: ExtensionContext["modelRegistry"]): NativeModelRegistry {
+	return {
+		async getApiKeyAndHeaders(model) {
+			return modelRegistry.getApiKeyAndHeaders(model as Parameters<typeof modelRegistry.getApiKeyAndHeaders>[0]);
+		},
+		getAvailable() {
+			return modelRegistry.getAvailable().map((available) => ({
+				provider: available.provider,
+				id: available.id,
+				baseUrl: available.baseUrl,
+			}));
+		},
+	};
+}
+
+async function configWithNativeRoute(config: WebsearchConfig, ctx: ExtensionContext): Promise<WebsearchConfig> {
 	if (!config.auto) return config;
-	const nativeEntries = await buildNativeEntries(ctx?.model, ctx?.modelRegistry);
+	const nativeEntries = await buildNativeEntries(
+		nativeModelFromContext(ctx.model),
+		nativeRegistryFromContext(ctx.modelRegistry),
+	);
 	return nativeEntries.length > 0 ? { ...config, providers: [...nativeEntries, ...config.providers] } : config;
 }
 
@@ -68,7 +86,7 @@ export function createWebSearchTool(getConfig: ConfigProvider): WebSearchTool {
 		promptSnippet: "Search the web for current information, documentation, news, or external facts.",
 		promptGuidelines: ["After using web_search, cite relevant returned URLs in the final answer."],
 		parameters: Params,
-		async execute(_toolCallId, params, signal, onUpdate, ctx?: WebSearchToolContext) {
+		async execute(_toolCallId, params, signal, onUpdate, ctx: ExtensionContext) {
 			if (params.allowed_domains?.length && params.blocked_domains?.length) {
 				const message = "Error: Cannot specify both allowed_domains and blocked_domains in the same request";
 				const details = searchErrorDetails(params.query, message);

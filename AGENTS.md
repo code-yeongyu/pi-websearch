@@ -12,15 +12,16 @@ Conventions for human contributors and AI agents working on this repository.
 
 ## Commands
 
-- `npm install` — install dependencies.
-- `npm test` — run vitest test suite once.
-- `npm run typecheck` — strict TypeScript check.
-- `npm run check` — type check + biome.
+- `bun install` — install dependencies (preferred for development).
+- `npm install` / `npm ci` — supported consumer install paths.
+- `bun run test` / `npm test` — run vitest test suite once.
+- `bun run typecheck` — strict TypeScript check.
+- `bun run check` — type check + biome.
 - `pi -e ./src/index.ts` — load the extension into a local pi session for manual smoke testing.
 
 ## Constraints
 
-- No Bun APIs. Runtime is Node 22.19+.
+- No Bun APIs. Runtime is Node 22.19+. Bun is used as the development/CI toolchain, not as a runtime API.
 - The extension is standalone and depends only on the public pi extension API.
 - Provider configuration is explicit: no config means the extension refuses to activate and surfaces a TUI startup error.
 - Exa, Tavily, Brave, Serper, Google CSE, Z.ai, OpenAI/Codex hosted search, Anthropic Messages search, Perplexity, xAI, and Kagi require their documented credentials.

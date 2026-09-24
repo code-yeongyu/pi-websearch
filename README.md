@@ -132,11 +132,14 @@ Tool text and TUI output include the selected provider entry, routing strategy, 
 ## Commands
 
 ```bash
-npm test
-npm run typecheck
-npm run check
+bun install
+bun run test
+bun run typecheck
+bun run check
 pi -e ./src/index.ts
 ```
+
+npm remains a supported consumer install (`npm install` / `npm ci` / `npm test`).
 
 Inside pi, run `/websearch status` to inspect activation state.
 
