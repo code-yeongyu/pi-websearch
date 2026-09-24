@@ -14,6 +14,7 @@ const DEFAULT_PROVIDER_URLS: Record<SearchProvider, string> = {
 	perplexity: "https://api.perplexity.ai/search",
 	xai: "https://api.x.ai/v1/responses",
 	kimi: "https://api.kimi.com/coding/v1/search",
+	kagi: "https://kagi.com/api/v1/search",
 };
 
 export function defaultProviderUrl(provider: SearchProvider): string {

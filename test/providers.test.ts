@@ -25,6 +25,7 @@ describe("buildSearchRequest", () => {
 			"perplexity",
 			"xai",
 			"kimi",
+			"kagi",
 		];
 
 		for (const provider of providers) {
@@ -371,6 +372,63 @@ describe("buildSearchRequest", () => {
 			timeout_seconds: 30,
 		});
 	});
+
+	it("#given kagi config #when building request #then posts query with lens domain filters", () => {
+		// given
+		const config: SearchProviderConfig = {
+			provider: "kagi",
+			apiKey: "kagi-test",
+			allowedDomains: ["docs.example.com", "api.example.com"],
+		};
+
+		// when
+		const request = buildSearchRequest(config, {
+			query: "current docs",
+			maxResults: 5,
+			allowedDomains: ["api.example.com"],
+		});
+
+		// then
+		expect(request.url).toBe("https://kagi.com/api/v1/search");
+		expect(request.init.method).toBe("POST");
+		expect(request.init.headers["Authorization"]).toBe("Bearer kagi-test");
+		expect(request.body).toEqual({
+			query: "current docs",
+			limit: 5,
+			lens: { sites_included: ["api.example.com"] },
+		});
+	});
+
+	it("#given kagi config blocklist #when building request #then maps blocklist into lens exclusions", () => {
+		// given
+		const config: SearchProviderConfig = {
+			provider: "kagi",
+			apiKey: "kagi-test",
+			blockedDomains: ["spam.example.com"],
+		};
+
+		// when
+		const request = buildSearchRequest(config, { query: "current docs", maxResults: 5 });
+
+		// then
+		expect(request.body).toEqual({
+			query: "current docs",
+			limit: 5,
+			lens: { sites_excluded: ["spam.example.com"] },
+		});
+	});
+
+	it("#given kagi config without domain filters #when building request #then omits lens", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "kagi", apiKey: "kagi-test" };
+
+		// when
+		const request = buildSearchRequest(config, { query: "current docs", maxResults: 30 });
+
+		// then
+		expect(request.url).toBe("https://kagi.com/api/v1/search");
+		expect(request.body).toEqual({ query: "current docs", limit: 20 });
+	});
 });
 
 describe("normalizeSearchResponse", () => {
@@ -603,5 +661,35 @@ describe("normalizeSearchResponse", () => {
 
 		// then
 		expect(results).toEqual([{ title: "Kimi Result", url: "https://kimi.example.com", snippet: "Kimi snippet" }]);
+	});
+
+	it("#given kagi response #when normalizing #then maps data search results", () => {
+		// given
+		const payload = {
+			meta: { ms: 42 },
+			data: {
+				search: [
+					{
+						title: "Kagi Result",
+						url: "https://kagi.example.com",
+						snippet: "Kagi snippet",
+						time: "2026-01-01T00:00:00Z",
+					},
+				],
+			},
+		};
+
+		// when
+		const results = normalizeSearchResponse("kagi", payload);
+
+		// then
+		expect(results).toEqual([
+			{
+				title: "Kagi Result",
+				url: "https://kagi.example.com",
+				snippet: "Kagi snippet",
+				publishedAt: "2026-01-01T00:00:00Z",
+			},
+		]);
 	});
 });

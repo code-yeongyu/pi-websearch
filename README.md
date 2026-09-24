@@ -122,6 +122,7 @@ Supported providers:
 - `anthropic`: Anthropic Messages API with server `web_search_20250305` tool. Requires `apiKey`.
 - `perplexity`: Perplexity Search API. Requires `apiKey`.
 - `xai`: xAI Responses API hosted `web_search` tool. Requires `apiKey`.
+- `kagi`: Kagi Search API (`POST /search`). Requires `apiKey`.
 
 Provider-specific optional fields include `id`, `baseUrl`, `model`, `maxResults`, `priority`, `weight`, `searchContextSize`, `codexMode`, `allowedDomains`, `blockedDomains`, and `userLocation` where supported. `baseUrl` is supported for every provider and must be a public HTTPS URL without embedded credentials.
 

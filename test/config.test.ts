@@ -361,6 +361,25 @@ describe("validateProviderConfig", () => {
 		expect(result.ok).toBe(true);
 	});
 
+	it("#given kagi without api key #when validating #then provider is invalid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "kagi" });
+
+		// then
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.reason).toBe("missing_api_key");
+		}
+	});
+
+	it("#given kagi with api key #when validating #then provider is valid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "kagi", apiKey: "kagi-test" });
+
+		// then
+		expect(result.ok).toBe(true);
+	});
+
 	it("#given codex without api key #when validating #then provider is invalid", () => {
 		// given / when
 		const result = validateProviderConfig({ provider: "codex" });

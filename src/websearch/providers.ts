@@ -3,6 +3,7 @@ import { braveProvider } from "./providers/brave.js";
 import { duckDuckGoHtmlProvider } from "./providers/duckduckgo-html.js";
 import { exaProvider } from "./providers/exa.js";
 import { googleCseProvider } from "./providers/google-cse.js";
+import { kagiProvider } from "./providers/kagi.js";
 import { kimiProvider } from "./providers/kimi.js";
 import { openAiResponsesProvider } from "./providers/openai-responses.js";
 import { perplexityProvider } from "./providers/perplexity.js";
@@ -34,6 +35,7 @@ const PROVIDER_MODULES: Record<SearchProvider, ProviderModule> = {
 	perplexity: perplexityProvider,
 	xai: xaiProvider,
 	kimi: kimiProvider,
+	kagi: kagiProvider,
 };
 
 export function buildSearchRequest(config: SearchProviderConfig, request: SearchRequest): BuiltSearchRequest {
