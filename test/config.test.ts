@@ -380,6 +380,17 @@ describe("validateProviderConfig", () => {
 		expect(result.ok).toBe(true);
 	});
 
+	it("#given serply without api key #when validating #then provider is invalid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "serply" });
+
+		// then
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.reason).toBe("missing_api_key");
+		}
+	});
+
 	it("#given codex without api key #when validating #then provider is invalid", () => {
 		// given / when
 		const result = validateProviderConfig({ provider: "codex" });

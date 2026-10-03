@@ -27,6 +27,7 @@ describe("buildSearchRequest", () => {
 			"xai",
 			"kimi",
 			"kagi",
+			"serply",
 		];
 
 		for (const provider of providers) {
@@ -448,6 +449,29 @@ describe("buildSearchRequest", () => {
 		expect(request.url).toBe("https://kagi.com/api/v1/search");
 		expect(request.body).toEqual({ query: "current docs", limit: 20 });
 	});
+
+	it("#given serply config #when building request #then sends key header, caps num, and folds domain filters into the query", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "serply", apiKey: "serply-test" };
+
+		// when
+		const request = buildSearchRequest(config, {
+			query: "current docs",
+			maxResults: 30,
+			allowedDomains: ["docs.example.com"],
+		});
+
+		// then
+		const url = new URL(request.url);
+		expect(`${url.origin}${url.pathname}`).toBe("https://api.serply.io/v1/search");
+		expect(url.searchParams.get("q")).toBe("current docs site:docs.example.com");
+		expect(url.searchParams.get("num")).toBe("10");
+		expect(url.searchParams.has("api_key")).toBe(false);
+		expect(request.init.method).toBe("GET");
+		expect(request.init.headers).toHaveProperty("X-Api-Key", "serply-test");
+		expect(request.init.headers).toHaveProperty("User-Agent", "pi-websearch");
+		expect(request.body).toBeUndefined();
+	});
 });
 
 describe("normalizeSearchResponse", () => {
@@ -726,5 +750,22 @@ describe("normalizeSearchResponse", () => {
 				publishedAt: "2026-01-01T00:00:00Z",
 			},
 		]);
+	});
+
+	it("#given serply response #when normalizing #then maps results and drops non-web links", () => {
+		// given
+		const payload = {
+			results: [
+				{ title: "Docs", link: "https://docs.example.com", description: "Useful docs" },
+				{ title: "Token", link: "CAESBQoDCAE", description: "Not a URL" },
+			],
+			total: 2,
+		};
+
+		// when
+		const results = normalizeSearchResponse("serply", payload);
+
+		// then
+		expect(results).toEqual([{ title: "Docs", url: "https://docs.example.com", snippet: "Useful docs" }]);
 	});
 });
