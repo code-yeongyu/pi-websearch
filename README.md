@@ -124,6 +124,7 @@ Supported providers:
 - `perplexity`: Perplexity Search API. Requires `apiKey`.
 - `xai`: xAI Responses API hosted `web_search` tool. Requires `apiKey`.
 - `kagi`: Kagi Search API (`POST /search`). Requires `apiKey`.
+- `youcom`: You.com Search API. Keyless free tier (`GET /v1/agents/search`, 100 searches/day per IP, no `apiKey`); set `apiKey` for the keyed endpoint with higher rate limits.
 
 Provider-specific optional fields include `id`, `baseUrl`, `model`, `maxResults`, `priority`, `weight`, `searchContextSize`, `codexMode`, `allowedDomains`, `blockedDomains`, and `userLocation` where supported. `baseUrl` is supported for every provider and must be a public HTTPS URL without embedded credentials.
 
