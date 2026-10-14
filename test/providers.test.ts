@@ -27,6 +27,7 @@ describe("buildSearchRequest", () => {
 			"xai",
 			"kimi",
 			"kagi",
+			"youcom",
 		];
 
 		for (const provider of providers) {
@@ -448,6 +449,33 @@ describe("buildSearchRequest", () => {
 		expect(request.url).toBe("https://kagi.com/api/v1/search");
 		expect(request.body).toEqual({ query: "current docs", limit: 20 });
 	});
+
+	it("#given youcom config without api key #when building request #then uses keyless endpoint", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "youcom" };
+
+		// when
+		const request = buildSearchRequest(config, { query: "test query", maxResults: 5 });
+
+		// then
+		expect(request.url).toContain("https://api.you.com/v1/agents/search");
+		expect(request.url).toContain("query=test+query");
+		expect(request.url).toContain("max_results=5");
+		expect(request.init.method).toBe("GET");
+		expect(request.init.headers).not.toHaveProperty("X-Api-Key");
+	});
+
+	it("#given youcom config with api key #when building request #then uses keyed endpoint", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "youcom", apiKey: "ydc-test" };
+
+		// when
+		const request = buildSearchRequest(config, { query: "test query", maxResults: 10 });
+
+		// then
+		expect(request.url).toContain("https://ydc-index.io/v1/search");
+		expect(request.init.headers).toHaveProperty("X-Api-Key", "ydc-test");
+	});
 });
 
 describe("normalizeSearchResponse", () => {
@@ -726,5 +754,20 @@ describe("normalizeSearchResponse", () => {
 				publishedAt: "2026-01-01T00:00:00Z",
 			},
 		]);
+	});
+
+	it("#given youcom response #when normalizing #then maps results web array", () => {
+		// given
+		const payload = {
+			results: {
+				web: [{ title: "Test Result", url: "https://example.com", description: "Test description" }],
+			},
+		};
+
+		// when
+		const results = normalizeSearchResponse("youcom", payload);
+
+		// then
+		expect(results).toEqual([{ title: "Test Result", url: "https://example.com", snippet: "Test description" }]);
 	});
 });

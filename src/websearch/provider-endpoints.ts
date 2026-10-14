@@ -16,6 +16,7 @@ const DEFAULT_PROVIDER_URLS: Record<SearchProvider, string> = {
 	xai: "https://api.x.ai/v1/responses",
 	kimi: "https://api.kimi.com/coding/v1/search",
 	kagi: "https://kagi.com/api/v1/search",
+	youcom: "https://api.you.com/v1/agents/search",
 };
 
 export function defaultProviderUrl(provider: SearchProvider): string {

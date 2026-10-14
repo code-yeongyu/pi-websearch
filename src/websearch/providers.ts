@@ -13,6 +13,7 @@ import type { ProviderModule } from "./providers/shared.js";
 import { parseObjectPayload, resolveDomainFilters } from "./providers/shared.js";
 import { tavilyProvider } from "./providers/tavily.js";
 import { xaiProvider } from "./providers/xai.js";
+import { youcomProvider } from "./providers/youcom.js";
 import { zAiProvider } from "./providers/z-ai.js";
 import type {
 	BuiltSearchRequest,
@@ -38,6 +39,7 @@ const PROVIDER_MODULES: Record<SearchProvider, ProviderModule> = {
 	xai: xaiProvider,
 	kimi: kimiProvider,
 	kagi: kagiProvider,
+	youcom: youcomProvider,
 };
 
 export function buildSearchRequest(config: SearchProviderConfig, request: SearchRequest): BuiltSearchRequest {

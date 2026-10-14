@@ -34,6 +34,7 @@ const PROVIDERS: readonly SearchProvider[] = [
 	"xai",
 	"kimi",
 	"kagi",
+	"youcom",
 ];
 const CONTEXT_SIZES: readonly SearchContextSize[] = ["low", "medium", "high"];
 const CODEX_MODES: readonly CodexSearchMode[] = ["cached", "live"];
@@ -221,6 +222,7 @@ export function validateProviderConfig(config: SearchProviderEntry): ProviderVal
 		config.provider !== "codex" &&
 		config.provider !== "openai" &&
 		config.provider !== "duckduckgo-html" &&
+		config.provider !== "youcom" &&
 		!hasApiKey(config)
 	) {
 		return { ok: false, reason: "missing_api_key", message: `Provider ${config.provider} requires apiKey.` };
