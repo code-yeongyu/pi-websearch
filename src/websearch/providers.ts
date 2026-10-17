@@ -1,5 +1,6 @@
 import { anthropicProvider } from "./providers/anthropic.js";
 import { braveProvider } from "./providers/brave.js";
+import { deepseekProvider } from "./providers/deepseek.js";
 import { duckDuckGoHtmlProvider } from "./providers/duckduckgo-html.js";
 import { exaProvider } from "./providers/exa.js";
 import { googleCseProvider } from "./providers/google-cse.js";
@@ -38,6 +39,7 @@ const PROVIDER_MODULES: Record<SearchProvider, ProviderModule> = {
 	xai: xaiProvider,
 	kimi: kimiProvider,
 	kagi: kagiProvider,
+	deepseek: deepseekProvider,
 };
 
 export function buildSearchRequest(config: SearchProviderConfig, request: SearchRequest): BuiltSearchRequest {

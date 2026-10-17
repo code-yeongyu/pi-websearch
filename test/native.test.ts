@@ -78,6 +78,11 @@ describe("buildNativeEntry", () => {
 				provider: "kimi",
 				baseUrl: "https://api.kimi.com/coding/v1/search",
 			},
+			{
+				model: model("deepseek", "deepseek-chat", "https://api.deepseek.com"),
+				provider: "deepseek",
+				baseUrl: "https://api.deepseek.com/v1/tools/search",
+			},
 		];
 
 		for (const testCase of cases) {

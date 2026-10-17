@@ -13,7 +13,8 @@ export type SearchProvider =
 	| "perplexity"
 	| "xai"
 	| "kimi"
-	| "kagi";
+	| "kagi"
+	| "deepseek";
 
 export type SearchContextSize = "low" | "medium" | "high";
 export type CodexSearchMode = "cached" | "live";
