@@ -79,6 +79,7 @@ Models that activate native routing (Q1 2026):
 - `perplexity`: any `sonar*` (search is intrinsic to Sonar models).
 - `z-ai` or `zai`: any `glm-*`.
 - `kimi-coding`: the `kimi-coding` provider (routes to the Kimi search endpoint).
+- `deepseek`: any DeepSeek model (routes to the DeepSeek tools/search endpoint).
 - `openrouter`: any `<provider>/<model>` whose `<provider>` and `<model>` match one of the rows above (for example `openai/gpt-5.5` or `anthropic/claude-opus-4-7`).
 
 A model that matches but whose endpoint rejects the server-side search tool simply fails that attempt and the configured providers take over (default `fallback: true`).
@@ -124,6 +125,7 @@ Supported providers:
 - `perplexity`: Perplexity Search API. Requires `apiKey`.
 - `xai`: xAI Responses API hosted `web_search` tool. Requires `apiKey`.
 - `kagi`: Kagi Search API (`POST /search`). Requires `apiKey`.
+- `deepseek`: DeepSeek Search API (`POST /v1/tools/search`). Requires `apiKey`.
 
 Provider-specific optional fields include `id`, `baseUrl`, `model`, `maxResults`, `priority`, `weight`, `searchContextSize`, `codexMode`, `allowedDomains`, `blockedDomains`, and `userLocation` where supported. `baseUrl` is supported for every provider and must be a public HTTPS URL without embedded credentials.
 

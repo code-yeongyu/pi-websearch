@@ -48,6 +48,10 @@ function nativeMapping(model: NativeModelInfo): NativeProviderMapping | null {
 		return { provider: "kimi", resource: "search" };
 	}
 
+	if (model.provider === "deepseek") {
+		return { provider: "deepseek", resource: "tools/search" };
+	}
+
 	if (model.provider === "openrouter") {
 		const slashIndex = model.id.indexOf("/");
 		if (slashIndex <= 0) return null;

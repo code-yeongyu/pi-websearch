@@ -28,7 +28,8 @@
 		"z-ai",
 		"codex",
 		"kagi",
-		"kimi"
+		"kimi",
+		"deepseek"
 	],
 	"pi": {
 		"extensions": [

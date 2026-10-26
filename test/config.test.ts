@@ -380,6 +380,25 @@ describe("validateProviderConfig", () => {
 		expect(result.ok).toBe(true);
 	});
 
+	it("#given deepseek without api key #when validating #then provider is invalid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "deepseek" });
+
+		// then
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.reason).toBe("missing_api_key");
+		}
+	});
+
+	it("#given deepseek with api key #when validating #then provider is valid", () => {
+		// given / when
+		const result = validateProviderConfig({ provider: "deepseek", apiKey: "ds-test" });
+
+		// then
+		expect(result.ok).toBe(true);
+	});
+
 	it("#given codex without api key #when validating #then provider is invalid", () => {
 		// given / when
 		const result = validateProviderConfig({ provider: "codex" });

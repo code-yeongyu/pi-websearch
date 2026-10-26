@@ -34,6 +34,7 @@ const PROVIDERS: readonly SearchProvider[] = [
 	"xai",
 	"kimi",
 	"kagi",
+	"deepseek",
 ];
 const CONTEXT_SIZES: readonly SearchContextSize[] = ["low", "medium", "high"];
 const CODEX_MODES: readonly CodexSearchMode[] = ["cached", "live"];

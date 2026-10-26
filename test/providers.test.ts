@@ -27,6 +27,7 @@ describe("buildSearchRequest", () => {
 			"xai",
 			"kimi",
 			"kagi",
+			"deepseek",
 		];
 
 		for (const provider of providers) {
@@ -418,6 +419,28 @@ describe("buildSearchRequest", () => {
 		});
 	});
 
+	it("#given deepseek config #when building request #then posts to deepseek search with bearer token and folds domain filters", () => {
+		// given
+		const config: SearchProviderConfig = { provider: "deepseek", apiKey: "ds-test" };
+
+		// when
+		const request = buildSearchRequest(config, {
+			query: "current docs",
+			maxResults: 10,
+			allowedDomains: ["docs.example.com"],
+			blockedDomains: ["reddit.com"],
+		});
+
+		// then
+		expect(request.url).toBe("https://api.deepseek.com/v1/tools/search");
+		expect(request.init.method).toBe("POST");
+		expect(request.init.headers["Authorization"]).toBe("Bearer ds-test");
+		expect(request.body).toEqual({
+			query: "current docs site:docs.example.com",
+			count: 10,
+		});
+	});
+
 	it("#given kagi config blocklist #when building request #then maps blocklist into lens exclusions", () => {
 		// given
 		const config: SearchProviderConfig = {
@@ -724,6 +747,38 @@ describe("normalizeSearchResponse", () => {
 				url: "https://kagi.example.com",
 				snippet: "Kagi snippet",
 				publishedAt: "2026-01-01T00:00:00Z",
+			},
+		]);
+	});
+
+	it("#given deepseek response #when normalizing #then maps results with summary, source, score, and publishedAt", () => {
+		// given
+		const payload = {
+			results: [
+				{
+					title: "DeepSeek Result",
+					url: "https://deepseek.example.com",
+					summary: "DeepSeek summary",
+					snippet: "Short snippet",
+					site_name: "DeepSeek News",
+					rerank_score: 2.5,
+					date: "2026-10-17T00:00:00+00:00",
+				},
+			],
+		};
+
+		// when
+		const results = normalizeSearchResponse("deepseek", payload);
+
+		// then
+		expect(results).toEqual([
+			{
+				title: "DeepSeek Result",
+				url: "https://deepseek.example.com",
+				snippet: "DeepSeek summary",
+				source: "DeepSeek News",
+				score: 2.5,
+				publishedAt: "2026-10-17T00:00:00+00:00",
 			},
 		]);
 	});
