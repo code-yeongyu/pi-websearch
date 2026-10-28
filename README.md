@@ -124,6 +124,7 @@ Supported providers:
 - `perplexity`: Perplexity Search API. Requires `apiKey`.
 - `xai`: xAI Responses API hosted `web_search` tool. Requires `apiKey`.
 - `kagi`: Kagi Search API (`POST /search`). Requires `apiKey`.
+- `serply`: [Serply](https://serply.io) Google search API (`GET /v1/search`, [docs](https://serply.io/docs)). Requires `apiKey`; returns up to 10 results per call.
 
 Provider-specific optional fields include `id`, `baseUrl`, `model`, `maxResults`, `priority`, `weight`, `searchContextSize`, `codexMode`, `allowedDomains`, `blockedDomains`, and `userLocation` where supported. `baseUrl` is supported for every provider and must be a public HTTPS URL without embedded credentials.
 

@@ -9,6 +9,7 @@ import { openAiResponsesProvider } from "./providers/openai-responses.js";
 import { perplexityProvider } from "./providers/perplexity.js";
 import { serpdiveProvider } from "./providers/serpdive.js";
 import { serperProvider } from "./providers/serper.js";
+import { serplyProvider } from "./providers/serply.js";
 import type { ProviderModule } from "./providers/shared.js";
 import { parseObjectPayload, resolveDomainFilters } from "./providers/shared.js";
 import { tavilyProvider } from "./providers/tavily.js";
@@ -38,6 +39,7 @@ const PROVIDER_MODULES: Record<SearchProvider, ProviderModule> = {
 	xai: xaiProvider,
 	kimi: kimiProvider,
 	kagi: kagiProvider,
+	serply: serplyProvider,
 };
 
 export function buildSearchRequest(config: SearchProviderConfig, request: SearchRequest): BuiltSearchRequest {
